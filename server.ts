@@ -1,6 +1,5 @@
 import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import dotenv from 'dotenv';
@@ -20,6 +19,9 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
+// Do not advertise the underlying Express server in responses.
+app.disable('x-powered-by');
+
 // High limit payload support for high-res base64 photo uploads
 app.use(express.json({ limit: '12mb' }));
 app.use(express.urlencoded({ limit: '12mb', extended: true }));
@@ -34,14 +36,18 @@ const requireAuth = async (req: express.Request, res: express.Response, next: ex
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     res.status(401).json({ error: 'Unauthorized: Missing or invalid token.' });
-    return; // Don't proceed without terminating properly since TS needs next() or return here but wait we already sent response so just return
+    return;
   }
-  const token = authHeader.split('Bearer ')[1];
+  const token = authHeader.slice('Bearer '.length).trim();
+  if (!token) {
+    res.status(401).json({ error: 'Unauthorized: Missing or invalid token.' });
+    return;
+  }
   try {
     const decodedToken = await getAuth().verifyIdToken(token);
     (req as any).user = decodedToken;
     next();
-  } catch (error) {
+  } catch {
     res.status(401).json({ error: 'Unauthorized: Invalid token.' });
   }
 };
@@ -65,6 +71,12 @@ function getGeminiClient(): GoogleGenAI {
   }
   return aiClient;
 }
+
+// Ensure API responses containing auth/user-derived data are not cached.
+app.use('/api', (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
 
 // Ensure the server can provide health checks
 app.get('/api/health', (req, res) => {
@@ -114,8 +126,8 @@ Return a structured representation containing:
           type: Type.OBJECT,
           properties: {
             title: { type: Type.STRING, description: 'Descriptive title for the item (3-8 words)' },
-            category: { 
-              type: Type.STRING, 
+            category: {
+              type: Type.STRING,
               description: 'Primary category fits the item',
               enum: ["electronics", "keys", "wallet", "documents", "clothing", "jewelry", "bags", "others"]
             },
@@ -136,9 +148,8 @@ Return a structured representation containing:
     res.json(parsed);
   } catch (error) {
     console.error('Error analyzing image:', error);
-    res.status(500).json({ 
-      error: 'Failed to analyze item image using AI engine.', 
-      details: error instanceof Error ? error.message : String(error) 
+    res.status(500).json({
+      error: 'Failed to analyze item image using AI engine.'
     });
   }
 });
@@ -214,9 +225,8 @@ Filter and return ONLY matches having a confidence score of 35% or higher. Sort 
     res.json(parsed);
   } catch (error) {
     console.error('Error in AI matchmaker:', error);
-    res.status(500).json({ 
-      error: 'Match reasoning failed.', 
-      details: error instanceof Error ? error.message : String(error) 
+    res.status(500).json({
+      error: 'Match reasoning failed.'
     });
   }
 });
@@ -234,7 +244,7 @@ app.post('/api/verify-claim', apiLimiter, requireAuth, async (req, res) => {
     }
 
     const adminDb = getAdminFirestore();
-    
+
     // Load public item details (for securityQuestion)
     const itemDoc = await adminDb.collection('items').doc(itemId).get();
     if (!itemDoc.exists) {
@@ -255,9 +265,9 @@ app.post('/api/verify-claim', apiLimiter, requireAuth, async (req, res) => {
     }
 
     const ai = getGeminiClient();
-    
+
     // Prompt Gemini to determine if it is a match
-    const promptString = `You are a verification engine for a Lost and Found system. 
+    const promptString = `You are a verification engine for a Lost and Found system.
 The owner has set a secret question (optional) and a secret answer for their item.
 A claimant is trying to claim the item. Your job is to verify if their answer is correct.
 
