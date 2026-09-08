@@ -45,6 +45,14 @@ const requireAuth = async (req: express.Request, res: express.Response, next: ex
   }
   try {
     const decodedToken = await getAuth().verifyIdToken(token);
+
+    // Server-side API access requires a verified Firebase email.
+    // Never trust a client-provided emailVerified flag.
+    if (!decodedToken.email_verified) {
+      res.status(403).json({ error: 'Email verification is required.' });
+      return;
+    }
+
     (req as any).user = decodedToken;
     next();
   } catch {
