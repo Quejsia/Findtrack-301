@@ -8,17 +8,12 @@ import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 
-if (!getApps().length) {
-  initializeApp();
-}
-
+if (!getApps().length) initializeApp();
 dotenv.config();
 
 const app = express();
 const PORT = 3000;
-
 app.disable('x-powered-by');
-
 app.use(express.json({ limit: '12mb' }));
 app.use(express.urlencoded({ limit: '12mb', extended: true }));
 
@@ -56,17 +51,8 @@ let aiClient: GoogleGenAI | null = null;
 function getGeminiClient(): GoogleGenAI {
   if (!aiClient) {
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error('GEMINI_API_KEY environment variable is not defined in system secrets.');
-    }
-    aiClient = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
+    if (!apiKey) throw new Error('GEMINI_API_KEY environment variable is not defined in system secrets.');
+    aiClient = new GoogleGenAI({ apiKey, httpOptions: { headers: { 'User-Agent': 'aistudio-build' } } });
   }
   return aiClient;
 }
@@ -83,48 +69,19 @@ app.get('/api/health', (req, res) => {
 app.post('/api/analyze-image', apiLimiter, requireAuth, async (req, res) => {
   try {
     const { imageBase64, mimeType } = req.body;
-    if (!imageBase64 || !mimeType) {
-       res.status(400).json({ error: 'imageBase64 and mimeType fields are required.' });
-       return;
-    }
-
+    if (!imageBase64 || !mimeType) return void res.status(400).json({ error: 'imageBase64 and mimeType fields are required.' });
     const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-    if (!ALLOWED_TYPES.includes(mimeType)) {
-      res.status(400).json({ error: 'Invalid image type.' });
-      return;
-    }
-
-    const ai = getGeminiClient();
-    const imagePart = { inlineData: { mimeType, data: imageBase64 } };
-    const promptString = `Analyze this image of a lost or found item. Extract details to auto-classify it for a Lost & Found tracker app.
-Return a structured representation containing:
-1. a clean, descriptive title (e.g., "Silver Metal Keychain" or "Red Leather iPhone Case").
-2. category (must be one of: "electronics", "keys", "wallet", "documents", "clothing", "jewelry", "bags", "others").
-3. a detailed physical description listing colors, distinguishing marks, brand labels, textures, shapes.
-4. suggestedLocation (where such an item is commonly lost or found based on visual clues, or default to general guess).`;
-
-    const response = await ai.models.generateContent({
+    if (!ALLOWED_TYPES.includes(mimeType)) return void res.status(400).json({ error: 'Invalid image type.' });
+    const response = await getGeminiClient().models.generateContent({
       model: 'gemini-2.0-flash',
-      contents: { parts: [imagePart, { text: promptString }] },
+      contents: { parts: [{ inlineData: { mimeType, data: imageBase64 } }, { text: `Analyze this image of a lost or found item. Extract details to auto-classify it for a Lost & Found tracker app. Return a structured representation containing: 1. a clean, descriptive title. 2. category (must be one of: "electronics", "keys", "wallet", "documents", "clothing", "jewelry", "bags", "others"). 3. a detailed physical description listing colors, distinguishing marks, brand labels, textures, shapes. 4. suggestedLocation (where such an item is commonly lost or found based on visual clues, or default to general guess).` }] },
       config: {
         responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            title: { type: Type.STRING, description: 'Descriptive title for the item (3-8 words)' },
-            category: { type: Type.STRING, description: 'Primary category fits the item', enum: ["electronics", "keys", "wallet", "documents", "clothing", "jewelry", "bags", "others"] },
-            description: { type: Type.STRING, description: 'Exhaustive physical attributes and identifying details' },
-            suggestedLocation: { type: Type.STRING, description: 'Inferred location clue from image background if any' }
-          },
-          required: ['title', 'category', 'description', 'suggestedLocation']
-        }
+        responseSchema: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, category: { type: Type.STRING, enum: ['electronics', 'keys', 'wallet', 'documents', 'clothing', 'jewelry', 'bags', 'others'] }, description: { type: Type.STRING }, suggestedLocation: { type: Type.STRING } }, required: ['title', 'category', 'description', 'suggestedLocation'] }
       }
     });
-
-    const outputText = response.text;
-    if (!outputText) throw new Error('Gemini API did not return text response.');
-    const parsed = JSON.parse(outputText.trim());
-    res.json(parsed);
+    if (!response.text) throw new Error('Gemini API did not return text response.');
+    res.json(JSON.parse(response.text.trim()));
   } catch (error) {
     console.error('Error analyzing image:', error);
     res.status(500).json({ error: 'Failed to analyze item image using AI engine.' });
@@ -133,156 +90,68 @@ Return a structured representation containing:
 
 app.post('/api/ai-matchmaker', apiLimiter, requireAuth, async (req, res) => {
   try {
-    const { itemToMatch, candidates } = req.body;
-    if (!itemToMatch || !candidates || !Array.isArray(candidates)) {
-       res.status(400).json({ error: 'itemToMatch and candidates array are required.' });
-       return;
-    }
-    if (candidates.length === 0) {
-       res.json({ matches: [] });
-       return;
-    }
+    const { itemId, candidateIds } = req.body;
+    const userUid = (req as any).user?.uid;
+    if (typeof itemId !== 'string' || !Array.isArray(candidateIds)) return void res.status(400).json({ error: 'itemId and candidateIds array are required.' });
+    if (!userUid || itemId.length > 128 || candidateIds.length > 100 || candidateIds.some((id: unknown) => typeof id !== 'string' || id.length > 128)) return void res.status(400).json({ error: 'Invalid match request.' });
 
-    const ai = getGeminiClient();
-    const instructionsPrompt = `You are the core intelligence matching engine for the Lost & Found app, FindTrack.
-We have a target item that was ${itemToMatch.type === 'lost' ? 'LOST' : 'FOUND'}:
-- Title: ${JSON.stringify(itemToMatch.title)}
-- Category: ${JSON.stringify(itemToMatch.category)}
-- Description: ${JSON.stringify(itemToMatch.description)}
-- Location Tracked: ${JSON.stringify(itemToMatch.location)}
-- Date Posted: ${JSON.stringify(itemToMatch.date)}
+    const adminDb = getAdminFirestore();
+    const targetDoc = await adminDb.collection('items').doc(itemId).get();
+    if (!targetDoc.exists) return void res.status(404).json({ error: 'Item not found.' });
+    const target = targetDoc.data();
+    if (target?.userId !== userUid || !['lost', 'found'].includes(target?.type) || target?.status !== 'active') return void res.status(403).json({ error: 'You are not authorized to match this item.' });
 
-Compare this target item against the following candidates of the opposite tracking list:
-${JSON.stringify(candidates.map(c => ({ id: c.id, title: c.title, category: c.category, description: c.description, location: c.location, date: c.date })))}
-
-For each candidate, calculate:
-1. A confidence score between 0 and 100 based on overlap of physical characteristics, colors, brands, categories (critical!), and logical distance of locations and dates.
-2. A matchReason: a friendly explanation (max 2 sentences) describing why they are a likely match, comparing matching features.
-
-Filter and return ONLY matches having a confidence score of 35% or higher. Sort the results with higher confidence scores of matching first.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: instructionsPrompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            matches: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: {
-              itemId: { type: Type.STRING, description: 'The unique candidate ID' },
-              confidenceScore: { type: Type.INTEGER, description: 'Percentage probability of match (0-100)' },
-              matchReason: { type: Type.STRING, description: 'Justification for the confidence index' }
-            }, required: ['itemId', 'confidenceScore', 'matchReason'] } }
-          },
-          required: ['matches']
-        }
-      }
+    if (candidateIds.length === 0) return void res.json({ matches: [] });
+    const uniqueIds = [...new Set(candidateIds)];
+    const refs = uniqueIds.map(id => adminDb.collection('items').doc(id));
+    const snapshots = await adminDb.getAll(...refs);
+    const oppositeType = target.type === 'lost' ? 'found' : 'lost';
+    const candidates = snapshots.filter(doc => {
+      if (!doc.exists) return false;
+      const data = doc.data();
+      return data?.type === oppositeType && data?.status === 'active';
+    }).map(doc => {
+      const data = doc.data()!;
+      return { id: doc.id, title: data.title, category: data.category, description: data.description, location: data.location, date: data.date };
     });
 
-    const outputText = response.text;
-    if (!outputText) throw new Error('Gemini API did not return comparison parameters.');
-    const parsed = JSON.parse(outputText.trim());
-    res.json(parsed);
+    const targetForAI = { id: targetDoc.id, title: target?.title, category: target?.category, description: target?.description, location: target?.location, date: target?.date, type: target?.type };
+    const prompt = `You are the FindTrack lost-and-found matching engine. Compare this authorized target item against the supplied opposite-type candidates. Return only candidate IDs that are plausible matches with confidence >=35. Never invent IDs. Target: ${JSON.stringify(targetForAI)} Candidates: ${JSON.stringify(candidates)} Return matches with itemId, confidenceScore (0-100), and matchReason (max 2 sentences).`;
+    const response = await getGeminiClient().models.generateContent({
+      model: 'gemini-2.0-flash',
+      contents: prompt,
+      config: { responseMimeType: 'application/json', responseSchema: { type: Type.OBJECT, properties: { matches: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { itemId: { type: Type.STRING }, confidenceScore: { type: Type.INTEGER }, matchReason: { type: Type.STRING } }, required: ['itemId', 'confidenceScore', 'matchReason'] } } }, required: ['matches'] } }
+    });
+    if (!response.text) throw new Error('Gemini API did not return comparison parameters.');
+    const parsed = JSON.parse(response.text.trim());
+    const allowedIds = new Set(candidates.map(c => c.id));
+    const matches = Array.isArray(parsed.matches) ? parsed.matches.filter((m: any) => allowedIds.has(m?.itemId) && Number.isInteger(m?.confidenceScore) && m.confidenceScore >= 35 && m.confidenceScore <= 100 && typeof m?.matchReason === 'string').slice(0, 100) : [];
+    res.json({ matches });
   } catch (error) {
     console.error('Error in AI matchmaker:', error);
     res.status(500).json({ error: 'Match reasoning failed.' });
   }
 });
 
-/**
- * API Route: Verify Claim
- * Verifies a claimant's answer using only the authoritative server-side item secret.
- */
 app.post('/api/verify-claim', apiLimiter, requireAuth, async (req, res) => {
   try {
-    // Only the item ID and claimant answer are accepted from the client.
-    // The expected answer and security question are always loaded server-side.
     const { claimerAnswer, itemId } = req.body;
-
-    if (typeof claimerAnswer !== 'string' || !claimerAnswer.trim() || typeof itemId !== 'string' || !itemId.trim()) {
-      res.status(400).json({ error: 'Missing required fields (claimerAnswer and itemId).' });
-      return;
-    }
-
-    if (itemId.length > 128 || claimerAnswer.length > 200) {
-      res.status(400).json({ error: 'Invalid claim verification input.' });
-      return;
-    }
-
+    const userUid = (req as any).user?.uid;
+    if (typeof claimerAnswer !== 'string' || claimerAnswer.trim().length === 0 || typeof itemId !== 'string' || itemId.length > 128) return void res.status(400).json({ error: 'Missing required fields (claimerAnswer and itemId).' });
     const adminDb = getAdminFirestore();
     const itemDoc = await adminDb.collection('items').doc(itemId).get();
-
-    if (!itemDoc.exists) {
-      res.status(404).json({ error: 'Item not found.' });
-      return;
-    }
-
+    if (!itemDoc.exists) return void res.status(404).json({ error: 'Item not found.' });
     const itemData = itemDoc.data();
-    const authenticatedUserId = (req as any).user?.uid;
-    const itemOwnerId = itemData?.userId;
-
-    // A claimant must not verify a claim against an arbitrary item or their own item.
-    // The item must be an active found item, and ownership is taken from the database.
-    if (itemData?.type !== 'found' || itemData?.status !== 'active') {
-      res.status(403).json({ error: 'This item is not available for claim verification.' });
-      return;
-    }
-
-    if (!authenticatedUserId || !itemOwnerId || authenticatedUserId === itemOwnerId) {
-      res.status(403).json({ error: 'You are not authorized to verify a claim for this item.' });
-      return;
-    }
-
+    if (itemData?.type !== 'found' || itemData?.status !== 'active') return void res.status(400).json({ error: 'This item is not available for claim verification.' });
+    if (itemData?.userId === userUid) return void res.status(403).json({ error: 'Item owners cannot verify a claim against their own item.' });
     const secretDoc = await adminDb.collection('itemSecrets').doc(itemId).get();
-
-    // Never accept a security answer supplied by the client. If no private secret
-    // exists, verification fails closed and the claim must be handled manually.
-    if (!secretDoc.exists || typeof secretDoc.data()?.securityAnswer !== 'string' || !secretDoc.data()?.securityAnswer.trim()) {
-      res.json({ match: false, reason: 'This item requires manual claim verification.' });
-      return;
-    }
-
-    const secretAnswer = secretDoc.data()!.securityAnswer;
-    const securityQuestion = typeof itemData?.securityQuestion === 'string' ? itemData.securityQuestion : '';
-
-    const ai = getGeminiClient();
-    const promptString = `You are a verification engine for a Lost and Found system.
-The owner has set a secret question and secret answer for their found item.
-A claimant is trying to claim the item. Verify whether their answer reasonably matches the owner's expected answer.
-
-Owner's Secret Question: ${securityQuestion || 'N/A'}
-Owner's Expected Answer: ${secretAnswer}
-Claimant's Answer: ${claimerAnswer.trim()}
-
-INSTRUCTIONS:
-1. Determine if the Claimant's Answer reasonably matches the Owner's Expected Answer logically or factually.
-2. Account for typos, phrasing differences, or synonymous interpretations.
-3. Reject gibberish, obvious prank answers, or answers that radically contradict the expected answer.
-4. Accept only a plausible match.
-
-Return ONLY a raw JSON object matching the requested schema.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
-      contents: [{ role: 'user', parts: [{ text: promptString }] }],
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            match: { type: Type.BOOLEAN, description: 'True if it reasonably matches, false otherwise' },
-            reason: { type: Type.STRING, description: 'Brief explanation why it was accepted or rejected (max 1 sentence)' }
-          },
-          required: ['match', 'reason']
-        }
-      }
-    });
-
-    const outputText = response.text;
-    if (!outputText) throw new Error('No output from Gemini');
-    const parsed = JSON.parse(outputText.trim());
-    res.json(parsed);
+    const secretAnswer = secretDoc.exists ? secretDoc.data()?.securityAnswer : null;
+    const securityQuestion = itemData?.securityQuestion || '';
+    if (typeof secretAnswer !== 'string' || !secretAnswer.trim()) return void res.status(409).json({ error: 'No private verification answer is configured. Manual verification is required.' });
+    const response = await getGeminiClient().models.generateContent({ model: 'gemini-2.0-flash', contents: [{ role: 'user', parts: [{ text: `You are a verification engine for a Lost and Found system. Determine whether the claimant answer reasonably matches the owner's expected answer. Allow reasonable typos, phrasing differences, or synonyms, but reject gibberish or contradictions. Owner's Secret Question: ${securityQuestion || 'N/A'} Owner's Expected Answer: ${secretAnswer} Claimant's Answer: ${claimerAnswer.trim()}` }] }], config: { responseMimeType: 'application/json', responseSchema: { type: Type.OBJECT, properties: { match: { type: Type.BOOLEAN }, reason: { type: Type.STRING } }, required: ['match', 'reason'] } } });
+    if (!response.text) throw new Error('No output from Gemini');
+    const parsed = JSON.parse(response.text.trim());
+    res.json({ match: parsed.match === true, reason: typeof parsed.reason === 'string' ? parsed.reason.slice(0, 300) : 'Verification completed.' });
   } catch (error) {
     console.error('Claim verification error:', error);
     res.status(500).json({ error: 'Internal server error verifying claim.' });
@@ -296,16 +165,10 @@ async function setupViteMiddleware() {
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
-    });
+    app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
   }
 }
 
 setupViteMiddleware().then(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`FindTrack Server booting successfully at http://0.0.0.0:${PORT}`);
-  });
-}).catch(err => {
-  console.error('Vite middleware hook failure:', err);
-});
+  app.listen(PORT, '0.0.0.0', () => console.log(`FindTrack Server booting successfully at http://0.0.0.0:${PORT}`));
+}).catch(err => console.error('Vite middleware hook failure:', err));
