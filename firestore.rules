@@ -19,7 +19,7 @@ service cloud.firestore {
     }
 
     function isValidId(id) {
-      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\-]+$');
     }
 
     function incoming() {
@@ -161,6 +161,11 @@ service cloud.firestore {
         && claimId == incoming().id
         && incoming().claimerId == request.auth.uid
         && isValidClaim(incoming())
+        && exists(/databases/$(database)/documents/items/$(incoming().itemId))
+        && get(/databases/$(database)/documents/items/$(incoming().itemId)).data.type == 'found'
+        && get(/databases/$(database)/documents/items/$(incoming().itemId)).data.status == 'active'
+        && get(/databases/$(database)/documents/items/$(incoming().itemId)).data.userId == incoming().finderId
+        && incoming().finderId != request.auth.uid
         && incoming().status == 'pending'
         && incoming().createdAt == request.time
         && incoming().updatedAt == request.time;
