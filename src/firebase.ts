@@ -1,95 +1,78 @@
 import { initializeApp } from 'firebase/app';
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup, 
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
   signOut,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  updateProfile
+  updateProfile,
 } from 'firebase/auth';
-import { getFirestore, doc, getDocFromServer } from 'firebase/firestore';
+import { getFirestore } from 'firebase/firestore';
 import appletConfig from '../firebase-applet-config.json';
 
-// Read configuration from Vite environment variables (or fall back to placeholder templates)
+const env = (import.meta as any).env || {};
+
 const firebaseConfig = {
-  apiKey: (import.meta as any).env.VITE_FIREBASE_API_KEY || "PASTE_YOUR_API_KEY_HERE",
-  authDomain: (import.meta as any).env.VITE_FIREBASE_AUTH_DOMAIN || "PASTE_YOUR_AUTH_DOMAIN_HERE",
-  projectId: (import.meta as any).env.VITE_FIREBASE_PROJECT_ID || "PASTE_YOUR_PROJECT_ID_HERE",
-  storageBucket: (import.meta as any).env.VITE_FIREBASE_STORAGE_BUCKET || "PASTE_YOUR_STORAGE_BUCKET_HERE",
-  messagingSenderId: (import.meta as any).env.VITE_FIREBASE_MESSAGING_SENDER_ID || "PASTE_YOUR_MESSAGING_SENDER_ID_HERE",
-  appId: (import.meta as any).env.VITE_FIREBASE_APP_ID || "PASTE_YOUR_APP_ID_HERE"
+  apiKey: env.VITE_FIREBASE_API_KEY,
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: env.VITE_FIREBASE_APP_ID,
 };
 
-// For optimal preview experience in AI Studio without blocking local runs, fallback to applet configuration when keys are placeholders:
-const activeConfig = firebaseConfig.apiKey === "PASTE_YOUR_API_KEY_HERE"
+const hasCompleteEnvConfig = Object.values(firebaseConfig).every(
+  (value) => typeof value === 'string' && value.trim().length > 0,
+);
+
+// AI Studio's generated placeholder config is not a usable Firebase configuration.
+// Keep the fallback only for environments that provide a real applet config.
+const activeConfig = hasCompleteEnvConfig
   ? {
-      ...appletConfig,
-      firestoreDatabaseId: (import.meta as any).env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || appletConfig.firestoreDatabaseId
-    }
-  : {
       ...firebaseConfig,
-      firestoreDatabaseId: (import.meta as any).env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || ""
-    };
+      firestoreDatabaseId: env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || '',
+    }
+  : appletConfig;
 
-// Initialize Firebase App
-const app = initializeApp(activeConfig);
-
-// Initialize Firebase Core services
-export const auth = getAuth(app);
-export const db = getFirestore(app, (activeConfig as any).firestoreDatabaseId);
-
-// Google Sign-In Provider
-export const googleProvider = new GoogleAuthProvider();
-googleProvider.setCustomParameters({
-  prompt: 'select_account'
+const hasUsableConfig = Object.entries(activeConfig).every(([key, value]) => {
+  if (key === 'measurementId' || key === 'firestoreDatabaseId') return true;
+  return typeof value === 'string' && value.trim().length > 0 && !value.includes('SEE_ENV') && !value.includes('PASTE_YOUR_');
 });
 
-// Enforce standard popup login for optimal iframe experience
+if (!hasUsableConfig) {
+  console.warn('Firebase configuration is incomplete. Set the VITE_FIREBASE_* environment variables for this deployment.');
+}
+
+const app = initializeApp(activeConfig);
+export const auth = getAuth(app);
+export const db = activeConfig.firestoreDatabaseId
+  ? getFirestore(app, activeConfig.firestoreDatabaseId)
+  : getFirestore(app);
+
+export const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({ prompt: 'select_account' });
+
 export const loginWithGoogle = async () => {
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
-  } catch (error) {
-    console.error('Core Sign In Error:', error);
-    throw error;
-  }
+  const result = await signInWithPopup(auth, googleProvider);
+  return result.user;
 };
 
-// Email/Password sign up helper
 export const registerWithEmail = async (email: string, password: string, displayName: string) => {
-  try {
-    const result = await createUserWithEmailAndPassword(auth, email, password);
-    await updateProfile(result.user, { displayName });
-    return result.user;
-  } catch (error) {
-    console.error('Email Registration Error:', error);
-    throw error;
-  }
+  const result = await createUserWithEmailAndPassword(auth, email, password);
+  await updateProfile(result.user, { displayName });
+  return result.user;
 };
 
-// Email/Password login helper
 export const loginWithEmail = async (email: string, password: string) => {
-  try {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    return result.user;
-  } catch (error) {
-    console.error('Email Login Error:', error);
-    throw error;
-  }
+  const result = await signInWithEmailAndPassword(auth, email, password);
+  return result.user;
 };
 
-// Log Out Helper
 export const logOut = async () => {
-  try {
-    await signOut(auth);
-  } catch (error) {
-    console.error('Logout Exception:', error);
-    throw error;
-  }
+  await signOut(auth);
 };
 
-// Standard error logging handler for Firestore
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
@@ -100,25 +83,16 @@ export enum OperationType {
 }
 
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData?.map(provider => ({
-        providerId: provider.providerId,
-        email: provider.email,
-      })) || []
-    },
+  const rawCode = typeof error === 'object' && error !== null && 'code' in error
+    ? String((error as { code?: unknown }).code || '')
+    : '';
+  const code = rawCode.startsWith('permission-denied') ? 'permission-denied' : rawCode || 'unknown';
+
+  console.error('[Firestore operation failed]', {
+    code,
     operationType,
-    path
-  };
+    path,
+  });
 
-  console.error('[Firestore Permission/Security failure]: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  throw new Error(`Firestore operation failed: ${code}`);
 }
-
-// No longer aggressively testing connection on boot to avoid "offline" errors in dev mode.
