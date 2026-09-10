@@ -3,34 +3,25 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Global default-deny catch-all
     match /{document=**} {
       allow read, write: if false;
     }
 
-    // Global utility primitives
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Checking email verification helper (only verified users can write items and transact)
     function isEmailVerified() {
-      return request.auth.token.email_verified == true;
+      return isSignedIn() && request.auth.token.email_verified == true;
     }
 
     function isValidId(id) {
       return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\-]+$');
     }
 
-    function incoming() {
-      return request.resource.data;
-    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
 
-    function existing() {
-      return resource.data;
-    }
-
-    // Validates item properties, checking types, boundaries, and formats
     function isValidItem(data) {
       return data.id is string && isValidId(data.id)
         && data.userId is string
@@ -44,13 +35,10 @@ service cloud.firestore {
         && data.contactInfo is string && data.contactInfo.size() <= 200
         && data.date is string && data.date.size() <= 100
         && data.get('imageUrl', '') is string && data.get('imageUrl', '').size() <= 500
-        && data.get('verificationQuestion', '') is string
-        && data.get('verificationQuestion', '').size() <= 500
-        && data.get('securityQuestion', '') is string
-        && data.get('securityQuestion', '').size() <= 500;
+        && data.get('verificationQuestion', '') is string && data.get('verificationQuestion', '').size() <= 500
+        && data.get('securityQuestion', '') is string && data.get('securityQuestion', '').size() <= 500;
     }
 
-    // Validates potential match parameters, enforcing score limits
     function isValidMatch(data) {
       return data.id is string && isValidId(data.id)
         && data.lostItemId is string && isValidId(data.lostItemId)
@@ -61,38 +49,31 @@ service cloud.firestore {
         && (data.status == 'pending' || data.status == 'accepted' || data.status == 'rejected');
     }
 
-    // Validates chat metadata structures
     function isValidChat(data) {
       return data.chatId is string && isValidId(data.chatId)
-        && data.participants is list
-        && data.participants.size() >= 2 && data.participants.size() <= 10
+        && data.participants is list && data.participants.size() >= 2 && data.participants.size() <= 10
         && data.participants[0] is string
         && data.itemId is string && isValidId(data.itemId)
-        && (data.get('lastMessage', '') is string && data.get('lastMessage', '').size() <= 2000);
+        && data.get('lastMessage', '') is string && data.get('lastMessage', '').size() <= 2000;
     }
 
-    // Validates individual message content
     function isValidMessage(data) {
       return data.senderId is string && data.senderId == request.auth.uid
         && data.text is string && data.text.size() <= 2000;
     }
 
-    // Validates claim properties
     function isValidClaim(data) {
       return data.id is string && isValidId(data.id)
         && data.itemId is string && isValidId(data.itemId)
-        && data.claimerId is string
-        && data.finderId is string
+        && data.claimerId is string && data.finderId is string
         && (data.status == 'pending' || data.status == 'approved' || data.status == 'declined')
-        && data.get('providedAnswer', '') is string && data.get('providedAnswer', '').size() <= 200;
+        && data.get('isReadByFinder', false) is bool;
     }
 
-    // --- Items Collection Rules ---
     match /items/{itemId} {
-      allow read, list: if isSignedIn();
+      allow read, list: if isEmailVerified();
 
-      allow create: if isSignedIn()
-        && isEmailVerified()
+      allow create: if isEmailVerified()
         && isValidId(itemId)
         && itemId == incoming().id
         && incoming().userId == request.auth.uid
@@ -100,29 +81,26 @@ service cloud.firestore {
         && incoming().createdAt == request.time
         && incoming().updatedAt == request.time;
 
-      allow update: if isSignedIn()
-        && isEmailVerified()
+      allow update: if isEmailVerified()
         && isValidId(itemId)
         && existing().userId == request.auth.uid
         && incoming().userId == existing().userId
         && incoming().createdAt == existing().createdAt
         && incoming().updatedAt == request.time
         && isValidItem(incoming())
-        && (
-          incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'category', 'location', 'status', 'contactName', 'contactInfo', 'date', 'imageUrl', 'updatedAt', 'verificationQuestion', 'securityQuestion', 'claimed'])
-        );
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'description', 'category', 'location', 'status', 'contactName',
+          'contactInfo', 'date', 'imageUrl', 'updatedAt', 'verificationQuestion',
+          'securityQuestion', 'claimed'
+        ]);
 
-      allow delete: if isSignedIn()
-        && isEmailVerified()
-        && existing().userId == request.auth.uid;
+      allow delete: if isEmailVerified() && existing().userId == request.auth.uid;
     }
 
-    // --- Private Item Secrets Rules ---
     match /itemSecrets/{itemId} {
       allow read: if false;
 
-      allow create: if isSignedIn()
-        && isEmailVerified()
+      allow create: if isEmailVerified()
         && isValidId(itemId)
         && incoming().itemId == itemId
         && incoming().userId == request.auth.uid
@@ -130,8 +108,7 @@ service cloud.firestore {
         && incoming().securityAnswer is string
         && incoming().securityAnswer.size() <= 200;
 
-      allow update: if isSignedIn()
-        && isEmailVerified()
+      allow update: if isEmailVerified()
         && isValidId(itemId)
         && existing().userId == request.auth.uid
         && incoming().userId == existing().userId
@@ -140,23 +117,17 @@ service cloud.firestore {
         && incoming().securityAnswer is string
         && incoming().securityAnswer.size() <= 200;
 
-      allow delete: if isSignedIn()
-        && isEmailVerified()
-        && existing().userId == request.auth.uid;
+      allow delete: if isEmailVerified() && existing().userId == request.auth.uid;
     }
 
-    // --- Claims Collection Rules ---
     match /claims/{claimId} {
-      allow read: if isSignedIn()
-        && isEmailVerified()
-        && (
-          existing().claimerId == request.auth.uid ||
-          existing().finderId == request.auth.uid ||
-          get(/databases/$(database)/documents/items/$(existing().itemId)).data.userId == request.auth.uid
-        );
+      allow read: if isEmailVerified() && (
+        existing().claimerId == request.auth.uid ||
+        existing().finderId == request.auth.uid ||
+        get(/databases/$(database)/documents/items/$(existing().itemId)).data.userId == request.auth.uid
+      );
 
-      allow create: if isSignedIn()
-        && isEmailVerified()
+      allow create: if isEmailVerified()
         && isValidId(claimId)
         && claimId == incoming().id
         && incoming().claimerId == request.auth.uid
@@ -170,13 +141,9 @@ service cloud.firestore {
         && incoming().createdAt == request.time
         && incoming().updatedAt == request.time;
 
-      allow update: if isSignedIn()
-        && isEmailVerified()
+      allow update: if isEmailVerified()
         && isValidId(claimId)
-        && (
-          existing().finderId == request.auth.uid ||
-          get(/databases/$(database)/documents/items/$(existing().itemId)).data.userId == request.auth.uid
-        )
+        && (existing().finderId == request.auth.uid || get(/databases/$(database)/documents/items/$(existing().itemId)).data.userId == request.auth.uid)
         && incoming().updatedAt == request.time
         && (
           (incoming().diff(existing()).affectedKeys().hasOnly(['isReadByFinder', 'updatedAt']) && incoming().status == existing().status) ||
@@ -184,65 +151,37 @@ service cloud.firestore {
         );
     }
 
-    // --- Matches Collection Rules ---
     match /matches/{matchId} {
       allow list: if false;
-
-      allow get: if isSignedIn()
-        && isEmailVerified()
-        && (
-          get(/databases/$(database)/documents/items/$(existing().lostItemId)).data.userId == request.auth.uid ||
-          get(/databases/$(database)/documents/items/$(existing().foundItemId)).data.userId == request.auth.uid
-        );
-
-      allow create: if isSignedIn()
-        && isEmailVerified()
+      allow get: if isEmailVerified() && (
+        get(/databases/$(database)/documents/items/$(existing().lostItemId)).data.userId == request.auth.uid ||
+        get(/databases/$(database)/documents/items/$(existing().foundItemId)).data.userId == request.auth.uid
+      );
+      allow create: if isEmailVerified()
+        && isValidId(matchId) && matchId == incoming().id && isValidMatch(incoming())
+        && (get(/databases/$(database)/documents/items/$(incoming().lostItemId)).data.userId == request.auth.uid || get(/databases/$(database)/documents/items/$(incoming().foundItemId)).data.userId == request.auth.uid)
+        && incoming().createdAt == request.time && incoming().updatedAt == request.time;
+      allow update: if isEmailVerified()
         && isValidId(matchId)
-        && matchId == incoming().id
-        && isValidMatch(incoming())
-        && (
-          get(/databases/$(database)/documents/items/$(incoming().lostItemId)).data.userId == request.auth.uid ||
-          get(/databases/$(database)/documents/items/$(incoming().foundItemId)).data.userId == request.auth.uid
-        )
-        && incoming().createdAt == request.time
-        && incoming().updatedAt == request.time;
-
-      allow update: if isSignedIn()
-        && isEmailVerified()
-        && isValidId(matchId)
-        && (
-          get(/databases/$(database)/documents/items/$(existing().lostItemId)).data.userId == request.auth.uid ||
-          get(/databases/$(database)/documents/items/$(existing().foundItemId)).data.userId == request.auth.uid
-        )
+        && (get(/databases/$(database)/documents/items/$(existing().lostItemId)).data.userId == request.auth.uid || get(/databases/$(database)/documents/items/$(existing().foundItemId)).data.userId == request.auth.uid)
         && incoming().createdAt == existing().createdAt
         && incoming().updatedAt == request.time
         && isValidMatch(incoming())
         && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
-
-      allow delete: if isSignedIn()
-        && isEmailVerified()
-        && (
-          get(/databases/$(database)/documents/items/$(existing().lostItemId)).data.userId == request.auth.uid ||
-          get(/databases/$(database)/documents/items/$(existing().foundItemId)).data.userId == request.auth.uid
-        );
+      allow delete: if isEmailVerified()
+        && (get(/databases/$(database)/documents/items/$(existing().lostItemId)).data.userId == request.auth.uid || get(/databases/$(database)/documents/items/$(existing().foundItemId)).data.userId == request.auth.uid);
     }
 
-    // --- Chats Collection Rules ---
     match /chats/{chatId} {
-      allow read, list: if isSignedIn()
-        && isEmailVerified()
-        && request.auth.uid in existing().participants;
-
-      allow create: if isSignedIn()
-        && isEmailVerified()
-        && isValidId(chatId)
-        && chatId == incoming().chatId
+      allow read, list: if isEmailVerified() && request.auth.uid in existing().participants;
+      allow create: if isEmailVerified()
+        && isValidId(chatId) && chatId == incoming().chatId
         && request.auth.uid in incoming().participants
+        && incoming().participants.size() == 2
+        && incoming().participants[0] != incoming().participants[1]
         && isValidChat(incoming())
         && incoming().timestamp == request.time;
-
-      allow update: if isSignedIn()
-        && isEmailVerified()
+      allow update: if isEmailVerified()
         && isValidId(chatId)
         && request.auth.uid in existing().participants
         && incoming().chatId == existing().chatId
@@ -253,24 +192,22 @@ service cloud.firestore {
         && incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'timestamp']);
     }
 
-    // --- Messages Subcollection Rules ---
     match /chats/{chatId}/messages/{messageId} {
-      allow read, list: if isSignedIn()
-        && isEmailVerified()
-        && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
-
-      allow create: if isSignedIn()
-        && isEmailVerified()
+      allow read, list: if isEmailVerified() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      allow create: if isEmailVerified()
         && isValidId(messageId)
         && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants
         && isValidMessage(incoming())
         && incoming().createdAt == request.time;
     }
 
-    // --- Users Collection Rules ---
     match /users/{userId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
-      allow write, update, delete: if isSignedIn() && request.auth.uid == userId;
+      allow read: if isEmailVerified() && request.auth.uid == userId;
+      allow create: if isEmailVerified() && request.auth.uid == userId
+        && incoming().id == request.auth.uid;
+      allow update: if isEmailVerified() && request.auth.uid == userId
+        && incoming().id == existing().id;
+      allow delete: if isEmailVerified() && request.auth.uid == userId;
     }
   }
 }
