@@ -4,14 +4,16 @@ const appPath = 'src/App.tsx';
 let app = fs.readFileSync(appPath, 'utf8');
 
 // Remove the legacy hard-coded AI Studio/Cloud Run domain troubleshooting modal.
+// The previous pattern missed the JSX wrapper ({/* ... */}), so the build-time
+// cleanup could not remove the modal and correctly failed its legacy-marker check.
 app = app.replace(
-  /\n\s*\/\* ── REFERER DOMAIN BLOCKED EXPLANATION MODAL ── \*\/.*?(?=\n\s*\/\* ── REAL-TIME DIRECT MESSAGING DRAWER OVERLAY ── \*\/)/s,
+  /\s*\{\/\*\s*─+\s*REFERER DOMAIN BLOCKED EXPLANATION MODAL\s*─+\s*\*\/\}\s*.*?(?=\s*\{\/\*\s*─+\s*REAL-TIME DIRECT MESSAGING DRAWER OVERLAY\s*─+\s*\*\/\})/s,
   '\n'
 );
 
 // Remove the now-unused modal state.
 app = app.replace(
-  /\s*const \[showRefererModal, setShowRefererModal\] = useState\(false\);\n\s*const \[refererBlockedDomain, setRefererBlockedDomain\] = useState\(""\);\n/,
+  /\s*const \[showRefererModal, setShowRefererModal\] = useState\(false\);\s*\n\s*const \[refererBlockedDomain, setRefererBlockedDomain\] = useState\(""\);\s*\n?/,
   '\n'
 );
 
