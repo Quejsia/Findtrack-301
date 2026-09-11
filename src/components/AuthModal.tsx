@@ -50,7 +50,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
       onClose();
     } catch (err: any) {
       console.error('Email authentication failure:', err);
-      // Clean up common Firebase errors to look professional
+      // TEMPORARY DIAGNOSTIC: expose only the Firebase Auth error code, never secrets.
+      const firebaseCode = typeof err?.code === 'string' ? err.code : 'unknown';
       let friendlyMessage = err.message || 'An authentication error occurred.';
       if (friendlyMessage.includes('auth/invalid-credential') || friendlyMessage.includes('auth/wrong-password')) {
         friendlyMessage = 'Invalid email or password combination.';
@@ -61,7 +62,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
       } else if (friendlyMessage.includes('auth/invalid-email')) {
         friendlyMessage = 'Please enter a valid email address.';
       }
-      setError(friendlyMessage);
+      setError(`${friendlyMessage} [Firebase code: ${firebaseCode}]`);
     } finally {
       setLoading(false);
     }
@@ -76,7 +77,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess, initialMode 
       onClose();
     } catch (err: any) {
       console.error('Google sign in failure:', err);
-      setError(err.message || 'Failed to authenticate via Google.');
+      // TEMPORARY DIAGNOSTIC: expose only the Firebase Auth error code, never secrets.
+      const firebaseCode = typeof err?.code === 'string' ? err.code : 'unknown';
+      setError(`${err.message || 'Failed to authenticate via Google.'} [Firebase code: ${firebaseCode}]`);
     } finally {
       setLoading(false);
     }
