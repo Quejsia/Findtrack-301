@@ -17,7 +17,9 @@ app = app.replace(
   '\n'
 );
 
-const genericAuthError = 'triggerToast("❌ Authentication is unavailable for this deployment. Please verify the Firebase domain/API-key configuration.", "error");';
+// Temporarily expose only the Firebase Auth error code so the real deployment
+// failure can be identified without exposing passwords, tokens, API keys, or PII.
+const genericAuthError = 'triggerToast("❌ Firebase error: " + (err?.code || "unknown"), "error");';
 
 // Remove the old domain-specific modal trigger from login/signup error handling.
 app = app.replace(
