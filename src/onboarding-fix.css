@@ -1,0 +1,26 @@
+/* Mobile onboarding interaction fix: keep the tour controls above other stacking contexts and explicitly touch-enabled. */
+.onboard-overlay {
+  pointer-events: auto;
+  touch-action: manipulation;
+  isolation: isolate;
+}
+
+.onboard-card {
+  position: relative;
+  z-index: 901;
+  pointer-events: auto;
+}
+
+.onboard-actions {
+  position: relative;
+  z-index: 902;
+  pointer-events: auto;
+}
+
+.onboard-actions button {
+  position: relative;
+  z-index: 903;
+  pointer-events: auto !important;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
