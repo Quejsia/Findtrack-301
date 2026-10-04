@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
+import statsHandler from './api/stats';
 
 if (!getApps().length) initializeApp();
 dotenv.config();
@@ -61,6 +62,8 @@ app.use('/api', (req, res, next) => {
   res.setHeader('Cache-Control', 'no-store');
   next();
 });
+
+app.get('/api/stats', apiLimiter, statsHandler);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });

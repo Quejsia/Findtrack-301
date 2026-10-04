@@ -82,7 +82,6 @@
   --card-border: rgba(255,255,255,0.15);
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
   font-family: 'DM Sans', system-ui, sans-serif;

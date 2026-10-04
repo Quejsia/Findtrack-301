@@ -326,6 +326,21 @@ export default function App() {
     }
   };
 
+  // Real platform counters for the landing page (null until loaded / if the endpoint is unavailable).
+  const [publicStats, setPublicStats] = useState<{ members: number; recoveries: number } | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/stats")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data && typeof data.members === "number") setPublicStats(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const goToLanding = () => {
     setCurrentView("landing");
     window.history.pushState(null, "", "/");
@@ -1516,17 +1531,19 @@ export default function App() {
                   <div>
                     <h2 className="font-sans text-3xl md:text-4xl font-bold text-primary-dim mb-4">By the Community,<br/>For the Community.</h2>
                     <p className="font-sans text-lg text-on-surface-variant mb-6">Built on the foundation of Bayanihan, FindTrack empowers everyday Filipinos to look out for one another.</p>
-                    <div className="flex gap-6 mb-8">
-                      <div>
-                        <div className="font-sans text-3xl font-bold text-primary">{new Set(items.map(i => i.userId)).size}</div>
-                        <div className="font-sans text-sm font-medium text-on-surface-variant">{t('profile.communityMember')}s</div>
+                    {publicStats && (
+                      <div className="flex gap-6 mb-8">
+                        <div>
+                          <div className="font-sans text-3xl font-bold text-primary">{publicStats?.members}</div>
+                          <div className="font-sans text-sm font-medium text-on-surface-variant">{t('profile.communityMember')}s</div>
+                        </div>
+                        <div className="w-px bg-[#bcbaa2]/50"></div>
+                        <div>
+                          <div className="font-sans text-3xl font-bold text-tertiary-container">{publicStats?.recoveries}</div>
+                          <div className="font-sans text-sm font-medium text-on-surface-variant">Successful Recoveries</div>
+                        </div>
                       </div>
-                      <div className="w-px bg-[#bcbaa2]/50"></div>
-                      <div>
-                        <div className="font-sans text-3xl font-bold text-tertiary-container">{stats.claimed}</div>
-                        <div className="font-sans text-sm font-medium text-on-surface-variant">Successful Recoveries</div>
-                      </div>
-                    </div>
+                    )}
                     {/* Testimonial Card - Community Recovery Story Empty State / CTA */}
                     <div className="bg-surface-container-lowest rounded-xl p-6 border border-[#bcbaa2]/30 shadow-sm relative hover:shadow-md transition-shadow">
                       <Quote className="absolute top-4 right-4 text-primary/10 w-10 h-10" />
@@ -1539,9 +1556,12 @@ export default function App() {
                         </div>
                         <div>
                           <div className="font-sans text-xs text-on-surface font-bold">Share Your Story</div>
-                          <div className="font-sans text-[10px] font-medium text-primary hover:underline cursor-pointer">
-                            Email support@findtrack.ph
-                          </div>
+                          <a
+                            href="mailto:novapulsarsupport@gmail.com"
+                            className="font-sans text-xs font-medium text-primary hover:underline"
+                          >
+                            Email novapulsarsupport@gmail.com
+                          </a>
                         </div>
                       </div>
                     </div>
