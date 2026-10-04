@@ -3,6 +3,9 @@ import { useTranslation } from 'react-i18next';
 import SettingsPage from './pages/Settings';
 import { LevelRoadmap } from "./pages/LevelRoadmap";
 import Home from './pages/Home';
+import PrivacyPage from './pages/legal/PrivacyPage';
+import TermsPage from './pages/legal/TermsPage';
+import { AboutPage, SafetyPage, HelpPage, ContactPage } from './pages/InfoPages';
 import { Trophy, Coffee as CoffeeIcon } from "lucide-react";
 import {
   User,
@@ -230,10 +233,7 @@ export default function App() {
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [guestBannerDismissed, setGuestBannerDismissed] = useState(false);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
-  const [showRefererModal, setShowRefererModal] = useState(false);
-  const [refererBlockedDomain, setRefererBlockedDomain] = useState("");
-
-  // My Items Tab
+// My Items Tab
   const [myItemsTab, setMyItemsTab] = useState<'items' | 'claims'>('items');
 
   // Dashboard inputs
@@ -324,6 +324,11 @@ export default function App() {
       setCurrentView("landing");
       window.history.pushState(null, "", "/");
     }
+  };
+
+  const goToLanding = () => {
+    setCurrentView("landing");
+    window.history.pushState(null, "", "/");
   };
 
   // Check login session
@@ -606,9 +611,7 @@ export default function App() {
         err.message?.includes("requests-from-referer") ||
         err.code?.includes("requests-from-referer")
       ) {
-        setRefererBlockedDomain(window.location.hostname);
-        setShowRefererModal(true);
-        triggerToast("⚠️ Domain not authorized in Firebase Console.", "error");
+        triggerToast("❌ Firebase error: " + (err?.code || "unknown"), "error");
       } else if (
         err.code === "auth/invalid-credential" ||
         err.code === "auth/user-not-found" ||
@@ -711,9 +714,7 @@ export default function App() {
         err.message?.includes("requests-from-referer") ||
         err.code?.includes("requests-from-referer")
       ) {
-        setRefererBlockedDomain(window.location.hostname);
-        setShowRefererModal(true);
-        triggerToast("⚠️ Domain not authorized in Firebase Console.", "error");
+        triggerToast("❌ Firebase error: " + (err?.code || "unknown"), "error");
       } else {
         triggerToast(
           "❌ Signup failed: " + (err.message || err.code || "Try again."),
@@ -1829,10 +1830,7 @@ export default function App() {
               <span className="font-headline-md text-lg font-bold text-primary tracking-tight">FindTrack</span>
             </div>
             <button 
-              onClick={() => {
-                setRefererBlockedDomain(window.location.hostname);
-                setShowRefererModal(true);
-              }}
+              onClick={() => triggerToast("If the verification link is expired, request a new verification email.", "error")}
               className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
             >
               <span className="material-symbols-outlined">help</span>
@@ -1974,10 +1972,7 @@ export default function App() {
               <div className="mt-6 pt-4 border-t border-outline-variant/20 w-full">
                 <button
                   type="button"
-                  onClick={() => {
-                    setRefererBlockedDomain(window.location.hostname);
-                    setShowRefererModal(true);
-                  }}
+                  onClick={() => triggerToast("If the verification link is expired, request a new verification email.", "error")}
                   className="w-full flex items-center justify-center gap-2 p-3 bg-tertiary-container/10 hover:bg-tertiary-container/20 border border-tertiary-container/50 text-on-tertiary-container rounded-xl text-xs transition-colors font-medium shadow-sm"
                 >
                   <span className="text-sm">❓</span>
@@ -2063,639 +2058,13 @@ export default function App() {
         </div>
       )}
 
-      {/* ── VIEW 6: PRIVACY POLICY PAGE ── */}
-      {currentView === "privacy" && (
-        <div
-          style={{
-            minHeight: "100vh",
-            background:
-              "radial-gradient(ellipse at bottom, #1e293b 0%, #0f172a 100%)",
-            color: "#f8fafc",
-            padding: "40px 16px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <div
-            style={{
-              maxWidth: "800px",
-              width: "100%",
-              background: "rgba(30, 41, 59, 0.7)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              borderRadius: "24px",
-              padding: "36px",
-              backdropFilter: "blur(20px)",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.3)",
-            }}
-            className="mx-auto"
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "32px",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-                paddingBottom: "20px",
-              }}
-            >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
-              >
-                <span style={{ fontSize: "32px" }}>🔒</span>
-                <div>
-                  <h1
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: "800",
-                      lineHeight: 1.2,
-                    }}
-                  >{t('landing.privacyPolicy')}</h1>
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      color: "rgba(255,255,255,0.5)",
-                      marginTop: "4px",
-                    }}
-                  >
-                    FindTrack Lost &amp; Found Platform
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleBackToSafety}
-                style={{
-                  background: "rgba(255, 255, 255, 0.12)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  padding: "8px 16px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                }}
-                className="hover:bg-surface-container-lowest/20 transition-all"
-              >
-                ← Go Back
-              </button>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "24px",
-                fontSize: "14px",
-                lineHeight: "1.7",
-                color: "rgba(255, 255, 255, 0.85)",
-              }}
-            >
-              <section>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "#38bdf8",
-                    marginBottom: "8px",
-                  }}
-                >
-                  1. Introduction
-                </h3>
-                <p>
-                  Welcome to FindTrack. We are dedicated to protecting your
-                  personal information and your right to privacy. This Privacy
-                  Policy describes how we collect, use, and process your
-                  information when you use our lost and found platform.
-                </p>
-              </section>
-
-              <section>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "#38bdf8",
-                    marginBottom: "8px",
-                  }}
-                >
-                  2. Information We Collect
-                </h3>
-                <p>
-                  To provide our services, facilitate claiming, and enable safe
-                  communications, we collect the following personal details:
-                </p>
-                <ul
-                  style={{
-                    listStyleType: "disc",
-                    paddingLeft: "20px",
-                    marginTop: "8px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                  }}
-                >
-                  <li>
-                    <strong>Account Credentials:</strong> Full name, verified
-                    email address, and profile pictures when you register.
-                  </li>
-                  <li>
-                    <strong>Contact Information:</strong> Phone numbers or
-                    social handle contact info you voluntarily provide so
-                    claimants/finders can get in touch with you.
-                  </li>
-                  <li>
-                    <strong>Item Reports Data:</strong> Item characteristics,
-                    dates, text descriptions, images of lost or found
-                    belongings, and exact or approximate locations where items
-                    were misplaced or recovered.
-                  </li>
-                </ul>
-              </section>
-
-              <section>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "#38bdf8",
-                    marginBottom: "8px",
-                  }}
-                >
-                  3. How We Use Your Information
-                </h3>
-                <p>
-                  We process your personal information for purposes based on
-                  legitimate interests, the fulfillment of our services, and
-                  user convenience:
-                </p>
-                <ul
-                  style={{
-                    listStyleType: "disc",
-                    paddingLeft: "20px",
-                    marginTop: "8px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                  }}
-                >
-                  <li>
-                    To facilitate user account creation, profile management, and
-                    authentication check-ins.
-                  </li>
-                  <li>
-                    To list lost/found items and coordinate ownership claims
-                    between users.
-                  </li>
-                  <li>
-                    To send real-time alerts or email matchmaker suggestions and
-                    notifications about matching items.
-                  </li>
-                  <li>
-                    To provide direct communication channels specifically for
-                    coordinating item returns.
-                  </li>
-                </ul>
-              </section>
-
-              <section>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "#38bdf8",
-                    marginBottom: "8px",
-                  }}
-                >
-                  4. Data Security &amp; Storage
-                </h3>
-                <p>
-                  Your account, contact profile information, and reported item
-                  details are safely stored using secure Cloud
-                  Firebase/Firestore infrastructure. Only authorized users can
-                  update their profiles or manage active items. We implement
-                  security protocols to protect your personal information
-                  against unauthorized retrieval, alteration, or disclosure.
-                </p>
-              </section>
-
-              <section>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "#38bdf8",
-                    marginBottom: "8px",
-                  }}
-                >
-                  5. Your Rights &amp; Data Deletion
-                </h3>
-                <p>
-                  You can access, modify, or delete your personal contact
-                  coordinates at any time directly through the{" "}
-                  <strong>My Profile</strong> or <strong>My Items</strong>{" "}
-                  dashboards. If you wish to completely close your account or
-                  wipe your listing data, please reach out to our team or use
-                  the direct profile purge settings.
-                </p>
-              </section>
-            </div>
-
-            <div
-              style={{
-                marginTop: "40px",
-                borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-                paddingTop: "20px",
-                textAlign: "center",
-                fontSize: "12px",
-                color: "rgba(255,255,255,0.4)",
-              }}
-            >
-              Last updated:{" "}
-              {new Date().toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}{" "}
-              · FindTrack Platform Security
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── VIEW 7: TERMS OF SERVICE PAGE ── */}
-      {currentView === "terms" && (
-        <div
-          style={{
-            minHeight: "100vh",
-            background:
-              "radial-gradient(ellipse at bottom, #1e293b 0%, #0f172a 100%)",
-            color: "#f8fafc",
-            padding: "40px 16px",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-          }}
-        >
-          <div
-            style={{
-              maxWidth: "800px",
-              width: "100%",
-              background: "rgba(30, 41, 59, 0.7)",
-              border: "1px solid rgba(255, 255, 255, 0.1)",
-              borderRadius: "24px",
-              padding: "36px",
-              backdropFilter: "blur(20px)",
-              boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.3)",
-            }}
-            className="mx-auto"
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "32px",
-                borderBottom: "1px solid rgba(255, 255, 255, 0.1)",
-                paddingBottom: "20px",
-              }}
-            >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "12px" }}
-              >
-                <span style={{ fontSize: "32px" }}>⚖️</span>
-                <div>
-                  <h1
-                    style={{
-                      fontSize: "24px",
-                      fontWeight: "800",
-                      lineHeight: 1.2,
-                    }}
-                  >{t('landing.termsOfService')}</h1>
-                  <p
-                    style={{
-                      fontSize: "13px",
-                      color: "rgba(255,255,255,0.5)",
-                      marginTop: "4px",
-                    }}
-                  >
-                    FindTrack Lost &amp; Found Platform
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleBackToSafety}
-                style={{
-                  background: "rgba(255, 255, 255, 0.12)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "8px",
-                  padding: "8px 16px",
-                  fontWeight: "600",
-                  cursor: "pointer",
-                  fontSize: "13px",
-                }}
-                className="hover:bg-surface-container-lowest/20 transition-all"
-              >
-                ← Go Back
-              </button>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "24px",
-                fontSize: "14px",
-                lineHeight: "1.7",
-                color: "rgba(255, 255, 255, 0.85)",
-              }}
-            >
-              <section>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "#38bdf8",
-                    marginBottom: "8px",
-                  }}
-                >
-                  1. Agreement to Terms
-                </h3>
-                <p>
-                  By registering, logging in, browsing as a guest, or submitting
-                  reports on FindTrack, you accept and agree to follow these
-                  Terms of Service. If you do not agree to all of these Terms,
-                  you are prohibited from using the application.
-                </p>
-              </section>
-
-              <section>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "#38bdf8",
-                    marginBottom: "8px",
-                  }}
-                >
-                  2. User Responsibilities &amp; Acceptable Use
-                </h3>
-                <p>
-                  When posting lost or found items and interacting with other
-                  community members, you agree to:
-                </p>
-                <ul
-                  style={{
-                    listStyleType: "disc",
-                    paddingLeft: "20px",
-                    marginTop: "8px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                  }}
-                >
-                  <li>
-                    Provide accurate, genuine, and reliable details regarding
-                    found objects, locations, and descriptions.
-                  </li>
-                  <li>
-                    Refrain from listing fraudulent claims, fake items,
-                    offensive photos, or inaccurate contact information.
-                  </li>
-                  <li>
-                    Respect other users and use the interactive real-time
-                    coordinates, chats, and claims desk only for legitimate
-                    recovery purposes.
-                  </li>
-                  <li>
-                    Never attempt to gain unauthorized access to other user
-                    profiles, databases, or restricted platform APIs.
-                  </li>
-                </ul>
-              </section>
-
-              <section>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "#38bdf8",
-                    marginBottom: "8px",
-                  }}
-                >
-                  3. Verification of Ownership &amp; Meetups
-                </h3>
-                <p>
-                  FindTrack provides verification mechanisms (such as custom
-                  security confirmation questions) to help confirm proof of
-                  ownership prior to release. However:
-                </p>
-                <ul
-                  style={{
-                    listStyleType: "disc",
-                    paddingLeft: "20px",
-                    marginTop: "8px",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "6px",
-                  }}
-                >
-                  <li>
-                    Users are solely responsible for thoroughly vetting proof of
-                    ownership before handing over items.
-                  </li>
-                  <li>
-                    Physical meetups, handling of high-value items, and
-                    exchanges are at your own discretion. We encourage
-                    coordinating safe, public, well-lit spaces (such as security
-                    desk areas, campuses, or official lost and found centers).
-                  </li>
-                </ul>
-              </section>
-
-              <section>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "#38bdf8",
-                    marginBottom: "8px",
-                  }}
-                >
-                  4. Disclaimer of Warrant &amp; Limitation of Liability
-                </h3>
-                <p>
-                  FindTrack is provided "as is" and "as available". We do not
-                  guarantee that your lost items will be found, or that matches
-                  suggested by the system are 100% correct. Under no
-                  circumstances shall FindTrack, our developers, or our
-                  affiliates be liable for damages, item damage, theft, fraud,
-                  or any conflicts arising from physical item exchange
-                  coordinates.
-                </p>
-              </section>
-
-              <section>
-                <h3
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "700",
-                    color: "#38bdf8",
-                    marginBottom: "8px",
-                  }}
-                >
-                  5. Modifications to Service
-                </h3>
-                <p>
-                  We reserves the right to modify or adjust the features,
-                  layouts, database rules, or services of FindTrack at any time.
-                  Continued use of the platform after updates indicates consent
-                  to all revised guidelines.
-                </p>
-              </section>
-            </div>
-
-            <div
-              style={{
-                marginTop: "40px",
-                borderTop: "1px solid rgba(255, 255, 255, 0.1)",
-                paddingTop: "20px",
-                textAlign: "center",
-                fontSize: "12px",
-                color: "rgba(255,255,255,0.4)",
-              }}
-            >
-              Last updated:{" "}
-              {new Date().toLocaleDateString(undefined, {
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}{" "}
-              · FindTrack Community Terms
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── VIEW 8: ABOUT US PAGE ── */}
-      {currentView === "about" && (
-        <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "sans-serif" }}>
-          <header style={{ padding: "20px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
-            <div style={{ fontWeight: "bold", fontSize: "24px", color: "#01725a", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }} onClick={() => { setCurrentView("landing"); window.history.pushState(null, "", "/"); }}>
-              <MapPin className="h-6 w-6 text-primary"/>
-              FindTrack
-            </div>
-          </header>
-          <div style={{ maxWidth: "800px", margin: "40px auto", padding: "40px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
-            <h1 style={{ fontSize: "32px", fontWeight: "bold", color: "#00654f", marginBottom: "24px" }}>{t('landing.aboutUs')}</h1>
-            <p style={{ fontSize: "16px", color: "#475569", lineHeight: "1.6", marginBottom: "20px" }}>
-              FindTrack is a community-driven lost and found platform dedicated to helping people recover their lost items across the Philippines.
-              Our mission is to foster a culture of honesty and trust (Bayanihan) by providing a secure and accessible platform for reporting and recovering lost belongings.
-            </p>
-            <p style={{ fontSize: "16px", color: "#475569", lineHeight: "1.6", marginBottom: "20px" }}>
-              Whether you've lost something precious or found an item that needs returning, FindTrack is here to bridge the gap and make recovery easier.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── VIEW 9: SAFETY GUIDELINES PAGE ── */}
-      {currentView === "safety" && (
-        <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "sans-serif" }}>
-          <header style={{ padding: "20px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
-            <div style={{ fontWeight: "bold", fontSize: "24px", color: "#01725a", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }} onClick={() => { setCurrentView("landing"); window.history.pushState(null, "", "/"); }}>
-              <MapPin className="h-6 w-6 text-primary"/>
-              FindTrack
-            </div>
-          </header>
-          <div style={{ maxWidth: "800px", margin: "40px auto", padding: "40px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
-            <h1 style={{ fontSize: "32px", fontWeight: "bold", color: "#00654f", marginBottom: "24px" }}>{t('landing.safetyGuidelines')}</h1>
-            <p style={{ fontSize: "16px", color: "#475569", lineHeight: "1.6", marginBottom: "20px" }}>
-              Your safety is our top priority. When meeting to return or retrieve a lost item, please keep the following guidelines in mind:
-            </p>
-            <ul style={{ listStyleType: "disc", paddingLeft: "24px", color: "#475569", lineHeight: "1.6", marginBottom: "20px", display: "flex", flexDirection: "column", gap: "12px" }}>
-              <li><strong>Meet in Public Places:</strong> Always choose well-lit, public locations for handovers, such as cafes, malls, or police stations.</li>
-              <li><strong>Bring a Friend:</strong> If possible, bring someone with you when meeting a stranger.</li>
-              <li><strong>Verify Ownership:</strong> Ask identifying questions about the item before handing it over (e.g., unique marks, passwords for devices).</li>
-              <li><strong>Do Not Share Personal Information:</strong> Avoid sharing your home address, financial details, or other sensitive information.</li>
-              <li><strong>Trust Your Instincts:</strong> If a situation feels unsafe, cancel the meeting and report the user if necessary.</li>
-            </ul>
-          </div>
-        </div>
-      )}
-
-      {/* ── VIEW 10: HELP CENTER PAGE ── */}
-      {currentView === "help" && (
-        <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "sans-serif" }}>
-          <header style={{ padding: "20px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
-            <div style={{ fontWeight: "bold", fontSize: "24px", color: "#01725a", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }} onClick={() => { setCurrentView("landing"); window.history.pushState(null, "", "/"); }}>
-              <MapPin className="h-6 w-6 text-primary"/>
-              FindTrack
-            </div>
-          </header>
-          <div style={{ maxWidth: "800px", margin: "40px auto", padding: "40px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
-            <h1 style={{ fontSize: "32px", fontWeight: "bold", color: "#00654f", marginBottom: "24px" }}>{t('landing.helpCenter')}</h1>
-            <p style={{ fontSize: "16px", color: "#475569", lineHeight: "1.6", marginBottom: "20px" }}>
-              Need assistance with using FindTrack? You're in the right place.
-            </p>
-            <div style={{ marginBottom: "24px" }}>
-              <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#0f172a", marginBottom: "12px" }}>How to Report a Lost Item</h2>
-              <p style={{ fontSize: "16px", color: "#475569", lineHeight: "1.6" }}>
-                1. Log in to your account and go to the Dashboard.<br/>
-                2. Click on the "Report Item" button.<br/>
-                3. Fill out the details (type, description, location) and upload a photo if available.<br/>
-                4. Submit the report to alert the community.
-              </p>
-            </div>
-            <div style={{ marginBottom: "24px" }}>
-              <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#0f172a", marginBottom: "12px" }}>How to Claim a Found Item</h2>
-              <p style={{ fontSize: "16px", color: "#475569", lineHeight: "1.6" }}>
-                1. Browse the items feed on your Dashboard.<br/>
-                2. If you spot an item that belongs to you, click "Claim item" (Hand icon).<br/>
-                3. Provide proof of ownership in the message to the finder.<br/>
-                4. Coordinate a safe handover.
-              </p>
-            </div>
-            <p style={{ fontSize: "16px", color: "#475569", lineHeight: "1.6", marginTop: "40px", paddingTop: "20px", borderTop: "1px solid #e2e8f0" }}>
-              Still need help? Please reach out to our support team at: <strong>novapulsarsupport@gmail.com</strong>
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── VIEW 11: CONTACT US PAGE ── */}
-      {currentView === "contact" && (
-        <div style={{ minHeight: "100vh", background: "#f8fafc", fontFamily: "sans-serif" }}>
-          <header style={{ padding: "20px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", background: "#fff", borderBottom: "1px solid #e2e8f0" }}>
-            <div style={{ fontWeight: "bold", fontSize: "24px", color: "#01725a", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }} onClick={() => { setCurrentView("landing"); window.history.pushState(null, "", "/"); }}>
-              <MapPin className="h-6 w-6 text-primary"/>
-              FindTrack
-            </div>
-          </header>
-          <div style={{ maxWidth: "800px", margin: "40px auto", padding: "40px", background: "#fff", borderRadius: "12px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)" }}>
-            <h1 style={{ fontSize: "32px", fontWeight: "bold", color: "#00654f", marginBottom: "24px" }}>{t('landing.contactUs')}</h1>
-            <p style={{ fontSize: "16px", color: "#475569", lineHeight: "1.6", marginBottom: "20px" }}>
-              We'd love to hear from you. Whether you have a question about our platform, need help with an item, or want to provide feedback, our team is ready to assist.
-            </p>
-            
-            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "24px", borderRadius: "8px", marginTop: "32px" }}>
-              <h2 style={{ fontSize: "20px", fontWeight: "bold", color: "#166534", marginBottom: "12px", display: "flex", alignItems: "center", gap: "8px" }}>
-                <Mail className="w-6 h-6" /> Email Support
-              </h2>
-              <p style={{ fontSize: "16px", color: "#166534", lineHeight: "1.6" }}>
-                You can reach our support team directly at:<br/>
-                <a href="mailto:novapulsarsupport@gmail.com" style={{ fontWeight: "bold", textDecoration: "underline", color: "#15803d", fontSize: "18px", display: "inline-block", marginTop: "8px" }}>
-                  novapulsarsupport@gmail.com
-                </a>
-              </p>
-              <p style={{ fontSize: "14px", color: "#15803d", marginTop: "12px" }}>
-                We typically respond within 24-48 hours.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── Static info & legal pages ── */}
+      {currentView === "privacy" && <PrivacyPage onBack={handleBackToSafety} />}
+      {currentView === "terms" && <TermsPage onBack={handleBackToSafety} />}
+      {currentView === "about" && <AboutPage onHome={goToLanding} />}
+      {currentView === "safety" && <SafetyPage onHome={goToLanding} />}
+      {currentView === "help" && <HelpPage onHome={goToLanding} />}
+      {currentView === "contact" && <ContactPage onHome={goToLanding} />}
 
       {/* ── VIEW 4: MAIN DASHBOARD PORTAL ── */}
       {currentView === "dashboard" && (
@@ -5300,82 +4669,6 @@ export default function App() {
         </div>
       )}
 
-      {/* ── REFERER DOMAIN BLOCKED EXPLANATION MODAL ── */}
-      {showRefererModal && (
-        <div className="fixed inset-0 z-[1001] bg-surface/60 backdrop-blur-md flex flex-col items-center justify-center p-4">
-          <div className="relative z-10 w-full max-w-lg bg-surface-container-lowest rounded-[24px] shadow-xl shadow-primary-dim/5 flex flex-col p-8 text-center border border-surface-variant overflow-hidden">
-            <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#9af4d6] via-[#01725a] to-[#9af4d6] opacity-30"></div>
-            
-            <div className="w-20 h-20 rounded-full bg-tertiary-container/10 border border-tertiary-container/30 flex items-center justify-center mx-auto mb-6 shadow-sm">
-              <span className="text-[40px]">⚠️</span>
-            </div>
-            
-            <h2 className="font-semibold text-[24px] text-on-surface mb-3 tracking-tight">Domain Security Authorization Required</h2>
-            
-            <div className="flex-1 overflow-y-auto space-y-4 text-left text-sm text-on-surface-variant mb-6 max-h-[50vh] px-2">
-              <p className="font-medium text-on-surface text-center">
-                You are visiting FindTrack from a custom domain: <code className="bg-tertiary-container/10 text-tertiary px-1.5 py-0.5 rounded border border-tertiary-container/50/50 font-mono">{refererBlockedDomain || window.location.hostname}</code>
-              </p>
-              
-              <div className="bg-primary-container/20 border border-primary-container p-4 rounded-xl text-on-primary-container">
-                <p className="font-medium mb-1 flex items-center gap-2">💡 Quick Fix for Users / Testers:</p>
-                <p>If you are a user trying to test FindTrack, please use the official sandbox domain of the app which is pre-authorized and works perfectly:</p>
-                <a 
-                  href="https://ais-pre-ugza3g3lajlvapecr5xph7-125820164386.asia-east1.run.app" 
-                  className="font-semibold underline block mt-2 hover:text-primary-dim font-mono break-all text-center"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  https://ais-pre-ugza3g3lajlvapecr5xph7-125820164386.asia-east1.run.app
-                </a>
-              </div>
-
-              <div className="space-y-4">
-                <div className="bg-tertiary-container/10 border border-tertiary-container/50 p-4 rounded-xl text-on-tertiary-container text-xs">
-                  <p className="font-bold text-sm mb-1.5 flex items-center gap-1.5 text-on-tertiary-container">
-                    <span>📧</span> Fix "Link expired" email verification error:
-                  </p>
-                  <p className="mb-2 leading-relaxed">
-                    This is caused by restricting your Google Cloud API Key to your custom domain without also authorizing Firebase's default handler domains!
-                  </p>
-                  <p className="mb-1 leading-relaxed">To resolve this:</p>
-                  <ol className="list-decimal pl-4 space-y-1">
-                    <li>Go to the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener noreferrer" className="underline font-bold hover:text-on-tertiary-container">Google Cloud Credentials Console</a>.</li>
-                    <li>Click your <strong>Browser/Web API Key</strong> to edit its settings.</li>
-                    <li>In the <strong>HTTP Referrers (Website restrictions)</strong> list, you must add these three entries:
-                      <ul className="list-disc pl-4 mt-1 space-y-0.5 font-mono text-[11px] bg-tertiary-container/20/50 p-2 rounded">
-                        <li><code>https://findtrack-17dee.firebaseapp.com/*</code></li>
-                        <li><code>https://findtrack-17dee.web.app/*</code></li>
-                        <li><code>https://{window.location.hostname}/*</code></li>
-                      </ul>
-                    </li>
-                  </ol>
-                </div>
-
-                <div>
-                  <p className="font-semibold text-on-surface">🛠️ General Domain Setup (For Signup Block):</p>
-                  <p className="text-xs text-on-surface-variant mb-2">If you cannot register or login because the domain is blocked:</p>
-                  <ol className="list-decimal pl-5 space-y-2 text-xs">
-                    <li>Go to the <strong><a href="https://console.firebase.google.com/" target="_blank" rel="noopener noreferrer" className="text-primary font-semibold underline hover:text-on-primary-container">Firebase Console</a></strong> and select your project.</li>
-                    <li>In the sidebar, go to <strong>Authentication</strong>, then click the <strong>Settings</strong> tab.</li>
-                    <li>In the left settings list, click <strong>Authorized Domains</strong>.</li>
-                    <li>Click <strong>Add domain</strong> and enter: <code className="bg-surface-variant px-1.5 py-0.5 rounded font-mono">{refererBlockedDomain || window.location.hostname}</code></li>
-                  </ol>
-                </div>
-              </div>
-            </div> 
-
-            <div className="w-full flex flex-col gap-3">
-              <button 
-                onClick={() => setShowRefererModal(false)}
-                className="w-full sm:w-auto bg-primary text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-primary-dim transition-colors flex items-center justify-center gap-2"
-              >
-                Close & Got It
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* ── REAL-TIME DIRECT MESSAGING DRAWER OVERLAY ── */}
       {activeChatId && (
