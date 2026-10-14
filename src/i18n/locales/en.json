@@ -584,7 +584,10 @@
     "lost": "Lost",
     "found": "Found",
     "noRecentActivity": "No recent activity.",
-    "everyRecoveredItemStrengthensTheCommunity": "Every recovered item strengthens the community."
+    "everyRecoveredItemStrengthensTheCommunity": "Every recovered item strengthens the community.",
+    "in": "in",
+    "member": "Member",
+    "reportedBy": "Reported by"
   },
   "landing": {
     "howItWorks": "How it Works",
@@ -621,7 +624,12 @@
     "tryAdjustingFilters": "Try adjusting your search filters or keywords.",
     "claimed": "CLAIMED",
     "found": "Found",
-    "lost": "Lost"
+    "lost": "Lost",
+    "filter": "Filter",
+    "keys": "Keys",
+    "noDescriptionProvided": "No description provided.",
+    "recent": "Recent",
+    "unknownLocation": "Unknown location"
   },
   "profile": {
     "communityMember": "Community Member",
@@ -699,7 +707,8 @@
     "noConfidences": "No matching items resolved confidence score > 35%.",
     "percentMatch": "{{percent}}% Match",
     "resolveMatch": "Resolve Match",
-    "loginAsCreator": "Login as creator to resolve"
+    "loginAsCreator": "Login as creator to resolve",
+    "encrypting": "Encrypting..."
   },
   "report": {
     "iAmReportingA": "I am reporting a...",
@@ -710,7 +719,13 @@
     "locationFound": "Location Found",
     "continue": "Continue",
     "itemTitlePlaceholder": "e.g. Blue Hydroflask",
-    "locationPlaceholder": "e.g. Library 2nd Floor"
+    "locationPlaceholder": "e.g. Library 2nd Floor",
+    "back": "Back",
+    "changeImage": "Tap to change image",
+    "submitReport": "Submit Report",
+    "tapToUpload": "Tap to upload photo",
+    "uploadLimit": "JPG, PNG up to 5MB",
+    "uploading": "Uploading..."
   },
   "alerts": {
     "pageTitle": "Alerts & Notifications",
@@ -734,5 +749,87 @@
     "youreAllCaughtUp": "You're all caught up",
     "noNewNotifications": "There are no new notifications or alerts at this time.",
     "loadOlderAlerts": "Load Older Alerts"
+  },
+  "about": {
+    "communityGuidelines": "Community Guidelines",
+    "contactSupport": "Contact Support",
+    "everythingYouNeedToKnow": "Everything you need to know about FindTrack.",
+    "faq": "Frequently Asked Questions",
+    "guideline1": "Always meet in public, well-lit places when returning items.",
+    "guideline2": "Do not share personal addresses or sensitive information until verified.",
+    "guideline3": "Report any suspicious behavior or false claims immediately.",
+    "howVerify": "How do I verify ownership?",
+    "howVerifyDesc": "When you claim a found item, you must correctly answer the security/security question set by the finder. Additionally, the finder may request further proof of ownership via contact before handing over the item.",
+    "isFree": "Is FindTrack free to use?",
+    "isFreeDesc": "Yes, FindTrack is completely free for all community members. Our mission is to restore trust and reunite lost items with their rightful owners.",
+    "needMoreHelp": "Need More Help?",
+    "needMoreHelpDesc": "Our support team is ready to assist you with any issues or disputes.",
+    "version": "Version 2.0.0 (Beta)",
+    "whatHappens": "What happens when an item is claimed?",
+    "whatHappensDesc": "Once an item is successfully claimed and verified, its status changes to 'Resolved'. Contact details are then shared securely between both parties to arrange the return."
+  },
+  "analytics": {
+    "highPerformance": "High performance",
+    "steadyGrowth": "Steady growth"
+  },
+  "categories": {
+    "active": "Active",
+    "bags": "Bags & Luggage",
+    "bags_desc": "Backpacks, purses, suitcases and other carry-ons.",
+    "clothing": "Clothing",
+    "desc": "Find what you're looking for by exploring our organized categories. We've classified items to help you navigate through reports efficiently.",
+    "documents": "Documents & IDs",
+    "documents_desc": "Passports, driver's licenses, IDs, and important paperwork.",
+    "electronics": "Electronics",
+    "electronics_desc": "Phones, laptops, tablets, and other digital devices reported lost or found recently.",
+    "explore": "Explore",
+    "jewelry": "Jewelry & Watches",
+    "pets": "Pets & Animals",
+    "pets_desc": "Lost dogs, cats, and other companion animals."
+  },
+  "chat": {
+    "about": "About",
+    "directMessaging": "Direct Messaging",
+    "introduceYourself": "Introduce yourself! Mention how or where you can sync up to return this item.",
+    "justNow": "Just now",
+    "loadingLogs": "Loading secure message logs...",
+    "logsStarted": "Message logs started...",
+    "noActiveChats": "No Active Chats",
+    "noActiveChatsDesc": "Open a lost or found item details page and tap \"Message Finder\" to connect instantly and privately.",
+    "participant": "Discussion Participant",
+    "placeholder": "Type secure handoff messages...",
+    "pleaseSignIn": "Please sign in to read your direct messages.",
+    "secureHandoffMessaging": "Secure Handoff Messaging",
+    "sendFailed": "Failed to send message securely. Try again.",
+    "syncing": "Syncing direct messages...",
+    "title": "Chat"
+  },
+  "level": {
+    "ach1Crit": "Report 1 item",
+    "ach1Desc": "Reported your first lost or found item.",
+    "ach1Title": "First Spark",
+    "ach2Crit": "Reunite 1 item",
+    "ach2Desc": "Successfully reunited a reported item with its owner.",
+    "ach2Title": "First Link",
+    "ach3Crit": "Report 5 items",
+    "ach3Desc": "Contributed extensively by reporting multiple items.",
+    "ach3Title": "Bayanihan Guardian",
+    "ach4Crit": "Reunite 3 items",
+    "ach4Desc": "Returned multiple items safely back to owners.",
+    "ach4Title": "Local Savior",
+    "ach5Crit": "Fill out Bio and Location",
+    "ach5Desc": "Completed your profile bio and primary location details.",
+    "ach5Title": "Verified Pillar",
+    "backToProfile": "Back to Profile",
+    "rank1": "Novice Finder",
+    "rank1Desc": "Start your journey. Keep an eye out for missing belongings in your community.",
+    "rank2": "Vigilant Citizen",
+    "rank2Desc": "Active community reporter. Your reports help restore security and peace of mind.",
+    "rank3": "Community Guardian",
+    "rank3Desc": "A pillar of Bayanihan. Generous with effort, you help bridge connections.",
+    "rank4": "Beacon of Hope",
+    "rank4Desc": "Extremely reliable. Recognized for your quick eyes and numerous successful returns.",
+    "rank5": "FindTrack Legend",
+    "rank5Desc": "The ultimate community hero. Revered by the entire community for your integrity."
   }
 }

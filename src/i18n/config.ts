@@ -20,7 +20,7 @@ i18n
       es: { translation: es }
     },
     fallbackLng: 'en',
-    parseMissingKeyHandler: (key) => { return key; },
+    parseMissingKeyHandler: (key, defaultValue) => (typeof defaultValue === 'string' && defaultValue ? defaultValue : key),
     interpolation: {
       escapeValue: false, // not needed for react as it escapes by default
     },
