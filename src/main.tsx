@@ -4,6 +4,9 @@ import "./i18n/config";
 import App from './App.tsx';
 import './index.css';
 import './onboarding-fix.css';
+import {installDebugReport} from './lib/debugReport';
+
+installDebugReport();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -413,6 +413,7 @@ export default function App() {
           } else {
             // First time login - create database record
             const initialData = {
+              id: currentUser.uid,
               name: currentUser.displayName || currentUser.email?.split("@")[0] || "User",
               email: currentUser.email || "",
               contact: "",
@@ -803,6 +804,7 @@ export default function App() {
         const userDocRef = doc(db, "users", auth.currentUser.uid);
         await setDoc(userDocRef, {
           ...updated,
+          id: auth.currentUser.uid,
           newMatchesNotif,
           communityAlertsNotif,
           updatedAt: new Date().toISOString()
@@ -810,7 +812,11 @@ export default function App() {
         triggerToast("Profile saved successfully!", "success");
       } catch (err) {
         console.error("Failed to save profile in database:", err);
-        triggerToast("❌ Failed to save changes to database", "error");
+        const saveCode =
+          typeof err === "object" && err !== null && "code" in err
+            ? String((err as { code?: unknown }).code || "unknown")
+            : "unknown";
+        triggerToast(`❌ Failed to save changes to database (${saveCode})`, "error");
       }
     } else {
       triggerToast("Profile saved successfully!", "success");
@@ -853,6 +859,11 @@ export default function App() {
 
     if (!reportTitle.trim()) {
       triggerToast("❌ Item title is required.", "error");
+      return;
+    }
+
+    if (auth.currentUser && !auth.currentUser.emailVerified) {
+      triggerToast("❌ Please verify your email address before reporting an item.", "error");
       return;
     }
 
@@ -927,7 +938,17 @@ export default function App() {
       setActiveTab("home");
     } catch (err) {
       console.error("Firestore creation error:", err);
-      triggerToast("❌ Submission rejected by security parameters.", "error");
+      const errCode =
+        typeof err === "object" && err !== null && "code" in err
+          ? String((err as { code?: unknown }).code || "unknown")
+          : "unknown";
+      const errMessage =
+        errCode.includes("permission-denied")
+          ? "❌ Not allowed by the security rules (permission-denied). Check that your email is verified."
+          : errCode.includes("unavailable") || errCode.includes("network")
+            ? "❌ Network problem. Check your connection and try again."
+            : `❌ Could not submit the report (${errCode}).`;
+      triggerToast(errMessage, "error");
       try {
         handleFirestoreError(err, OperationType.CREATE, `items/${payloadId}`);
       } catch (e) {}
@@ -1842,7 +1863,7 @@ export default function App() {
 
       {/* ── VIEW 5: VERIFY EMAIL SCREEN ── */}
       {currentView === "verify-email" && (
-        <div className="min-h-screen flex flex-col bg-surface-container text-on-surface">
+        <div className="min-h-screen flex flex-col bg-surface-container text-on-surface relative z-10">
           {/* Header */}
           <header className="w-full bg-surface shadow-sm border-b border-outline-variant/20 py-4 px-6 flex justify-between items-center shrink-0">
             <div className="flex items-center gap-2">
@@ -2279,6 +2300,7 @@ export default function App() {
               <Home
                 items={items}
                 stats={stats}
+                members={publicStats?.members}
                 profileName={profileName}
                 setActiveTab={setActiveTab}
                 setCategoryKeywords={setCategoryKeywords}

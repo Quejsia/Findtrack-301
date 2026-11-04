@@ -27,6 +27,7 @@ export interface ItemReport {
 interface HomeProps {
   items: ItemReport[];
   stats: { lost: number; found: number; claimed: number };
+  members?: number;
   profileName: string;
   setActiveTab: (tab: string) => void;
   setCategoryKeywords: (keywords: string[] | null) => void;
@@ -36,6 +37,7 @@ interface HomeProps {
 export const Home: React.FC<HomeProps> = ({
   items,
   stats,
+  members,
   profileName,
   setActiveTab,
   setCategoryKeywords,
@@ -75,7 +77,7 @@ export const Home: React.FC<HomeProps> = ({
         <div className="bg-[#D3E8E5] p-5 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
           <Users className="w-8 h-8 text-[#1A7B72] mb-3" strokeWidth={1.5} />
           <div className="text-sm font-medium text-[#15605A] leading-tight mb-1">{t('dashboard.communityMembers')}:</div>
-          <div className="text-3xl font-bold text-[#1A7B72]">{new Set(items.map(i => i.userId).filter(Boolean)).size || 1}</div>
+          <div className="text-3xl font-bold text-[#1A7B72]">{members ?? (new Set(items.map(i => i.userId).filter(Boolean)).size || 1)}</div>
         </div>
         <div className="bg-[#D3E8E5] p-5 rounded-xl flex flex-col items-center justify-center text-center shadow-sm">
           <CheckSquare className="w-8 h-8 text-[#1A7B72] mb-3" strokeWidth={1.5} />
