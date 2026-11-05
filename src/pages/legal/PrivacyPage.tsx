@@ -15,9 +15,9 @@ export default function PrivacyPage({ onBack }: PrivacyPageProps) {
       lastUpdatedLabel="FindTrack Platform Security"
       onBack={onBack}
     >
-      <div className="flex flex-col gap-6 text-sm leading-[1.7] text-white/85">
+      <div className="flex flex-col gap-6 text-sm leading-[1.7] text-on-surface-variant">
         <section>
-          <h3 className="mb-2 text-base font-bold text-sky-400">
+          <h3 className="mb-2 text-base font-bold text-primary">
             1. Introduction
           </h3>
           <p>
@@ -29,7 +29,7 @@ export default function PrivacyPage({ onBack }: PrivacyPageProps) {
         </section>
 
         <section>
-          <h3 className="mb-2 text-base font-bold text-sky-400">
+          <h3 className="mb-2 text-base font-bold text-primary">
             2. Information We Collect
           </h3>
           <p>
@@ -55,7 +55,7 @@ export default function PrivacyPage({ onBack }: PrivacyPageProps) {
         </section>
 
         <section>
-          <h3 className="mb-2 text-base font-bold text-sky-400">
+          <h3 className="mb-2 text-base font-bold text-primary">
             3. How We Use Your Information
           </h3>
           <p>
@@ -84,7 +84,7 @@ export default function PrivacyPage({ onBack }: PrivacyPageProps) {
         </section>
 
         <section>
-          <h3 className="mb-2 text-base font-bold text-sky-400">
+          <h3 className="mb-2 text-base font-bold text-primary">
             4. Data Security &amp; Storage
           </h3>
           <p>
@@ -98,7 +98,7 @@ export default function PrivacyPage({ onBack }: PrivacyPageProps) {
         </section>
 
         <section>
-          <h3 className="mb-2 text-base font-bold text-sky-400">
+          <h3 className="mb-2 text-base font-bold text-primary">
             5. Your Rights &amp; Data Deletion
           </h3>
           <p>

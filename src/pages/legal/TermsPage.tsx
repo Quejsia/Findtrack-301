@@ -15,9 +15,9 @@ export default function TermsPage({ onBack }: TermsPageProps) {
       lastUpdatedLabel="FindTrack Community Terms"
       onBack={onBack}
     >
-      <div className="flex flex-col gap-6 text-sm leading-[1.7] text-white/85">
+      <div className="flex flex-col gap-6 text-sm leading-[1.7] text-on-surface-variant">
         <section>
-          <h3 className="mb-2 text-base font-bold text-sky-400">
+          <h3 className="mb-2 text-base font-bold text-primary">
             1. Agreement to Terms
           </h3>
           <p>
@@ -29,7 +29,7 @@ export default function TermsPage({ onBack }: TermsPageProps) {
         </section>
 
         <section>
-          <h3 className="mb-2 text-base font-bold text-sky-400">
+          <h3 className="mb-2 text-base font-bold text-primary">
             2. User Responsibilities &amp; Acceptable Use
           </h3>
           <p>
@@ -57,7 +57,7 @@ export default function TermsPage({ onBack }: TermsPageProps) {
         </section>
 
         <section>
-          <h3 className="mb-2 text-base font-bold text-sky-400">
+          <h3 className="mb-2 text-base font-bold text-primary">
             3. Verification of Ownership &amp; Meetups
           </h3>
           <p>
@@ -80,7 +80,7 @@ export default function TermsPage({ onBack }: TermsPageProps) {
         </section>
 
         <section>
-          <h3 className="mb-2 text-base font-bold text-sky-400">
+          <h3 className="mb-2 text-base font-bold text-primary">
             4. Disclaimer of Warrant &amp; Limitation of Liability
           </h3>
           <p>
@@ -94,7 +94,7 @@ export default function TermsPage({ onBack }: TermsPageProps) {
         </section>
 
         <section>
-          <h3 className="mb-2 text-base font-bold text-sky-400">
+          <h3 className="mb-2 text-base font-bold text-primary">
             5. Modifications to Service
           </h3>
           <p>

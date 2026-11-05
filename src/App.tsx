@@ -6,7 +6,7 @@ import Home from './pages/Home';
 import PrivacyPage from './pages/legal/PrivacyPage';
 import TermsPage from './pages/legal/TermsPage';
 import { AboutPage, SafetyPage, HelpPage, ContactPage } from './pages/InfoPages';
-import { Trophy, Coffee as CoffeeIcon } from "lucide-react";
+import { Trophy, Coffee as CoffeeIcon, Leaf, MailCheck } from "lucide-react";
 import {
   User,
   onAuthStateChanged,
@@ -531,39 +531,56 @@ export default function App() {
   }, [currentView, user]);
 
   // 2. Real-time Firestore Sync of items / reports
+  // Security rules only allow reads for email-verified users, so wait until the
+  // user is verified (and the token carries that claim) before subscribing.
+  const itemsReadable = !!(user && (!user.email || user.emailVerified));
   useEffect(() => {
-    const reportsCollection = collection(db, "items"); // Rules define items matching
+    if (!itemsReadable) {
+      setItems([]);
+      return;
+    }
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
 
-    // Listen to all public lost/found entries across the board to permit comprehensive lost and found search engine matching
-    const unsubscribe = onSnapshot(
-      query(reportsCollection),
-      (snapshot) => {
-        const list: ItemReport[] = [];
-        snapshot.forEach((docSnap) => {
-          list.push({ id: docSnap.id, ...docSnap.data() } as ItemReport);
-        });
-        // Sort in-memory descending creation date
-        list.sort((a, b) => {
-          const aTime = a.createdAt?.seconds
-            ? a.createdAt.seconds * 1000
-            : new Date(a.createdAt || 0).getTime();
-          const bTime = b.createdAt?.seconds
-            ? b.createdAt.seconds * 1000
-            : new Date(b.createdAt || 0).getTime();
-          return bTime - aTime;
-        });
-        setItems(list);
-        setHomeShimmer(false);
-      },
-      (error) => {
-        console.error("Firestore sync error:", error);
-      },
-    );
+    const start = () => {
+      if (cancelled) return;
+      unsubscribe = onSnapshot(
+        query(collection(db, "items")),
+        (snapshot) => {
+          const list: ItemReport[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push({ id: docSnap.id, ...docSnap.data() } as ItemReport);
+          });
+          // Sort in-memory descending creation date
+          list.sort((a, b) => {
+            const aTime = a.createdAt?.seconds
+              ? a.createdAt.seconds * 1000
+              : new Date(a.createdAt || 0).getTime();
+            const bTime = b.createdAt?.seconds
+              ? b.createdAt.seconds * 1000
+              : new Date(b.createdAt || 0).getTime();
+            return bTime - aTime;
+          });
+          setItems(list);
+          setHomeShimmer(false);
+        },
+        (error) => {
+          console.error("Firestore sync error:", error);
+          setHomeShimmer(false);
+        },
+      );
+    };
 
-    return unsubscribe;
-  }, []);
+    // Refresh the ID token first so a stale email_verified claim cannot block the listener.
+    (auth.currentUser ? auth.currentUser.getIdToken(true) : Promise.resolve(""))
+      .catch(console.error)
+      .finally(start);
 
-
+    return () => {
+      cancelled = true;
+      if (unsubscribe) unsubscribe();
+    };
+  }, [itemsReadable, user?.uid]);
 
   // Safeguard: Block unverified users from accessing protected views (dashboard) and redirect them to verify screen
   useEffect(() => {
@@ -868,6 +885,15 @@ export default function App() {
     }
 
     setIsUploading(true);
+    try {
+      // Make sure the token carries the latest email_verified claim before writing.
+      if (auth.currentUser) {
+        await auth.currentUser.reload();
+        await auth.currentUser.getIdToken(true);
+      }
+    } catch (tokenErr) {
+      console.error("Token refresh failed:", tokenErr);
+    }
     let finalImageUrl = reportImage || "";
 
     if (reportImageFile) {
@@ -1867,14 +1893,14 @@ export default function App() {
           {/* Header */}
           <header className="w-full bg-surface shadow-sm border-b border-outline-variant/20 py-4 px-6 flex justify-between items-center shrink-0">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>eco</span>
+              <Leaf className="h-5 w-5 text-primary" aria-hidden="true" />
               <span className="font-headline-md text-lg font-bold text-primary tracking-tight">FindTrack</span>
             </div>
             <button 
               onClick={() => triggerToast("If the verification link is expired, request a new verification email.", "error")}
               className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
             >
-              <span className="material-symbols-outlined">help</span>
+              <HelpCircle className="h-5 w-5" aria-hidden="true" />
             </button>
           </header>
 
@@ -1883,7 +1909,7 @@ export default function App() {
             <div className="bg-surface w-full max-w-md rounded-xl shadow-[0_8px_32px_rgba(1,114,90,0.06)] p-8 md:p-10 flex flex-col items-center text-center border border-outline-variant/30 animate-[fadeInUp_0.8s_ease_forwards]">
               {/* Icon */}
               <div className="w-16 h-16 bg-primary-container rounded-full flex items-center justify-center mb-6 shadow-sm">
-                <span className="material-symbols-outlined text-3xl text-on-primary-container" style={{ fontVariationSettings: "'FILL' 1" }}>mark_email_read</span>
+                <MailCheck className="h-8 w-8 text-on-primary-container" aria-hidden="true" />
               </div>
 
               {/* Heading */}
@@ -2092,7 +2118,7 @@ export default function App() {
             {/* Brand Footer */}
             <div className="mt-6 text-center opacity-75">
               <p className="font-sans font-extrabold text-primary tracking-wider text-sm flex items-center justify-center gap-1.5">
-                <span className="material-symbols-outlined text-sm">eco</span> FindTrack
+                <Leaf className="h-4 w-4" aria-hidden="true" /> FindTrack
               </p>
             </div>
           </div>
