@@ -138,7 +138,7 @@ app.post('/api/ai-matchmaker', apiLimiter, requireAuth, async (req, res) => {
 
 app.post('/api/verify-claim', apiLimiter, requireAuth, async (req, res) => {
   try {
-    const { claimerAnswer, itemId } = req.body;
+    const { claimerAnswer, itemId, manual } = req.body;
     const userUid = (req as any).user?.uid;
     if (typeof claimerAnswer !== 'string' || claimerAnswer.trim().length === 0 || typeof itemId !== 'string' || itemId.length > 128) return void res.status(400).json({ error: 'Missing required fields (claimerAnswer and itemId).' });
     const adminDb = getAdminFirestore();
@@ -147,6 +147,26 @@ app.post('/api/verify-claim', apiLimiter, requireAuth, async (req, res) => {
     const itemData = itemDoc.data();
     if (itemData?.type !== 'found' || itemData?.status !== 'active') return void res.status(400).json({ error: 'This item is not available for claim verification.' });
     if (itemData?.userId === userUid) return void res.status(403).json({ error: 'Item owners cannot verify a claim against their own item.' });
+    if (manual === true) {
+      const existingClaim = await adminDb.collection('claims').where('itemId', '==', itemId).where('claimerId', '==', userUid).where('status', '==', 'pending').limit(1).get();
+      if (!existingClaim.empty) return void res.json({ match: false, pending: true, claimId: existingClaim.docs[0].id });
+      const pendingId = `claim_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+      const authUser = (req as any).user || {};
+      await adminDb.collection('claims').doc(pendingId).set({
+        id: pendingId, itemId,
+        itemTitle: typeof itemData?.title === 'string' ? itemData.title : '',
+        imageUrl: typeof itemData?.imageUrl === 'string' ? itemData.imageUrl : '',
+        claimerId: userUid,
+        claimerName: typeof authUser.name === 'string' && authUser.name ? authUser.name : (authUser.email || '').split('@')[0] || 'Member',
+        claimerEmail: authUser.email || '', claimerContact: '',
+        finderId: itemData?.userId,
+        securityQuestion: typeof itemData?.securityQuestion === 'string' && itemData.securityQuestion ? itemData.securityQuestion : 'Please verify physical details for item ownership confirmation.',
+        providedAnswer: claimerAnswer.trim().slice(0, 1000),
+        status: 'pending', autoVerified: false, manualOverride: false, isReadByFinder: false,
+        createdAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp(),
+      });
+      return void res.json({ match: false, pending: true, claimId: pendingId });
+    }
     const secretDoc = await adminDb.collection('itemSecrets').doc(itemId).get();
     const secretAnswer = secretDoc.exists ? secretDoc.data()?.securityAnswer : null;
     const securityQuestion = itemData?.securityQuestion || '';

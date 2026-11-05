@@ -915,7 +915,7 @@ export default function App() {
       id: payloadId,
       userId: auth.currentUser?.uid || "anonymous_uid",
       title: reportTitle.trim(),
-      description: reportDesc.trim() || "No description provided.",
+      description: ((reportDesc.trim() || "No description provided.") + (reportColor.trim() ? `\nColor: ${reportColor.trim()}` : "")).slice(0, 1000),
       type: reportType,
       category: reportCategory, // Supported standard selection
       location: reportLocation.trim() || "Unknown Location",
@@ -923,7 +923,6 @@ export default function App() {
       contactName: profileName || "Student",
       contactInfo: `${profileContact || "No contact provided"} | Email: ${reportEmail.trim() || profileEmail || "No email provided"}`,
       date: reportDate || new Date().toISOString(),
-      color: reportColor.trim(),
       imageUrl: finalImageUrl,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -939,8 +938,7 @@ export default function App() {
         await setDoc(doc(db, "itemSecrets", payloadId), {
           itemId: payloadId,
           userId: auth.currentUser?.uid || "anonymous_uid",
-          securityAnswer: reportSecurityAnswer.trim().toLowerCase(),
-          createdAt: serverTimestamp(),
+          securityAnswer: reportSecurityAnswer.trim().toLowerCase().slice(0, 200),
         });
       }
 
@@ -1178,7 +1176,6 @@ export default function App() {
           chatId,
           participants: [user.uid, otherUserUid],
           itemId,
-          itemTitle,
           lastMessage: `Convo initiated about "${itemTitle}"`,
           timestamp: serverTimestamp(),
         });

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Item, Claim } from '../types';
+import { submitClaim } from '../lib/claimApi';
 import { motion, AnimatePresence } from 'motion/react';
 import { getCategoryIcon } from './ItemCard';
 import Matchmaker from './Matchmaker';
@@ -184,84 +185,29 @@ export default function ItemDetail({
 
     try {
       let autoApproved = false;
-      let serverCreatedClaim = false;
-      const normalizedUserAnswer = answer.trim().toLowerCase();
       const hasSecurityQuestion = !!item.securityQuestion && item.securityQuestion.trim().length > 0;
 
-      if (hasSecurityQuestion) {
-        try {
-          const token = await auth.currentUser?.getIdToken();
-          const response = await fetch('/api/verify-claim', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              itemId: item.id,
-              claimerAnswer: answer.trim(),
-              // Legacy fallbacks:
-              secretAnswer: item.securityAnswer?.trim() || '',
-              securityQuestion: item.securityQuestion || ''
-            })
-          });
-
-          if (response.ok) {
-            const data = await response.json();
-            
-            // If the AI rejected it, show the error immediately to the user and don't submit
-            if (data.match === false && data.reason) {
-              setClaimErrorObj(`Verification Failed: ${data.reason}`);
-              setSubmittingClaim(false);
-              return; // Stop the claim submission
-            }
-            
-            autoApproved = !!data.match; // set true if match
-            // The server creates approved claims itself (rules only let clients create 'pending').
-            serverCreatedClaim = autoApproved && typeof data.claimId === 'string';
-          } else {
-            throw new Error('API server returned error status.');
-          }
-        } catch (e) {
-          console.error("AI Verification Error:", e);
-          // Fallback to exact match if API fails and we have local securityAnswer (legacy items)
-          const normalizedCorrectAnswer = item.securityAnswer?.trim().toLowerCase() || '';
-          if (normalizedCorrectAnswer) {
-            autoApproved = normalizedUserAnswer === normalizedCorrectAnswer;
-          } else {
-            setClaimErrorObj("Verification could not be processed due to a secure backend connection error. Please try again.");
-            setSubmittingClaim(false);
-            return;
-          }
-        }
+      // The server checks the answer and creates the claim (approved on a match, pending
+      // for manual review otherwise) because clients may not write full claim documents.
+      let result;
+      try {
+        result = await submitClaim(item.id, answer, !hasSecurityQuestion);
+      } catch (e) {
+        console.error("Claim request failed:", e);
+        setClaimErrorObj("Your claim could not be processed due to a secure backend connection error. Please try again.");
+        setSubmittingClaim(false);
+        return;
       }
 
-      if (!serverCreatedClaim) {
-      const claimPayload: Claim = {
-        id: claimId,
-        itemId: item.id,
-        itemTitle: item.title,
-        imageUrl: item.imageUrl || '',
-        claimerId: currentUserUid,
-        claimerName: auth.currentUser?.displayName || 'Representative Name',
-        claimerEmail: auth.currentUser?.email || '',
-        claimerContact: auth.currentUser?.phoneNumber || '',
-        finderId: item.userId,
-        securityQuestion: item.securityQuestion || 'Please verify physical details for item ownership confirmation.',
-        providedAnswer: answer.trim(),
-        status: 'pending',
-        autoVerified: false,
-        manualOverride: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      await setDoc(doc(db, 'claims', claimId), {
-        ...claimPayload,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
+      if (result.status === 409) {
+        // The owner never set a private answer: fall back to manual review.
+        result = await submitClaim(item.id, answer, true);
+      } else if (hasSecurityQuestion && !result.match) {
+        setClaimErrorObj(`Verification Failed: ${result.reason || "Your answer did not match the owner's answer."}`);
+        setSubmittingClaim(false);
+        return;
       }
+      autoApproved = result.match === true;
 
       if (autoApproved) {
         alert('Ownership verified successfully! Contact details unlocked.');
@@ -785,6 +731,7 @@ export default function ItemDetail({
             <div className="w-full h-full flex flex-col" id="embedded-chat-view" style={{ minHeight: '350px' }}>
               <ChatView
                 chatId={[currentUserUid, item.userId, item.id].sort().join("_")}
+                itemId={item.id}
                 currentUserUid={currentUserUid}
                 itemTitle={item.title}
                 otherUserId={item.userId}
@@ -896,6 +843,7 @@ export default function ItemDetail({
 
 interface ChatViewProps {
   chatId: string;
+  itemId: string;
   currentUserUid: string;
   itemTitle: string;
   otherUserId: string;
@@ -903,7 +851,7 @@ interface ChatViewProps {
   onBack: () => void;
 }
 
-function ChatView({ chatId, currentUserUid, itemTitle, otherUserId, reporterName, onBack }: ChatViewProps) {
+function ChatView({ chatId, itemId, currentUserUid, itemTitle, otherUserId, reporterName, onBack }: ChatViewProps) {
   const { t } = useTranslation();
   const [messages, setMessages] = useState<any[]>([]);
   const [inputText, setInputText] = useState('');
@@ -946,13 +894,19 @@ function ChatView({ chatId, currentUserUid, itemTitle, otherUserId, reporterName
 
     try {
       const chatDocRef = doc(db, 'chats', chatId);
-      const chatSnap = await getDoc(chatDocRef);
-      if (!chatSnap.exists()) {
+      // Reading a chat that does not exist yet is denied by the rules: treat that as "no chat yet".
+      let chatExists = false;
+      try {
+        chatExists = (await getDoc(chatDocRef)).exists();
+      } catch (readErr: any) {
+        if (readErr?.code !== 'permission-denied') throw readErr;
+      }
+      if (!chatExists) {
+        // Only the fields the Firestore rules allow on a new chat.
         await setDoc(chatDocRef, {
           chatId,
           participants: [currentUserUid, otherUserId],
-          itemId: chatId.split('_').slice(-1)[0] || '',
-          itemTitle,
+          itemId,
           lastMessage: textToSend,
           timestamp: serverTimestamp()
         });

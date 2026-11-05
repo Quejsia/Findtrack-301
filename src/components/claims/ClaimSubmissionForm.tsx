@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Info, ArrowRight, CheckCircle2, Lightbulb } from 'lucide-react';
-import { db, auth } from '../../firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { auth } from '../../firebase';
+import { submitClaim } from '../../lib/claimApi';
 
 interface Props {
   itemId: string;
@@ -36,17 +36,8 @@ export const ClaimSubmissionForm: React.FC<Props> = ({
 
     setIsSubmitting(true);
     try {
-      const claimId = "claim_" + crypto.randomUUID();
-      await setDoc(doc(db, "claims", claimId), {
-        id: claimId,
-        itemId,
-        claimerId: currentUser.uid,
-        finderId,
-        status: "pending",
-        isReadByFinder: false,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+      // The server stores the claim together with your answer for the finder to review.
+      await submitClaim(itemId, answer, true);
       setIsSuccess(true);
     } catch (error) {
       console.error("Failed to submit claim", error);

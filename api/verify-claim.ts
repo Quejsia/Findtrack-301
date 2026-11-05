@@ -71,7 +71,7 @@ export default async function handler(req: any, res: any) {
   if (!user) return;
 
   try {
-    const { claimerAnswer, itemId } = req.body || {};
+    const { claimerAnswer, itemId, manual } = req.body || {};
     if (
       typeof claimerAnswer !== 'string' ||
       claimerAnswer.trim().length === 0 ||
@@ -95,6 +95,41 @@ export default async function handler(req: any, res: any) {
     }
     if (item?.userId === user.uid) {
       return res.status(403).json({ error: 'Item owners cannot verify a claim against their own item.' });
+    }
+
+    // Manual review: no answer checking, just record a pending claim for the finder.
+    if (manual === true) {
+      const existingClaim = await db
+        .collection('claims')
+        .where('itemId', '==', itemId)
+        .where('claimerId', '==', user.uid)
+        .where('status', '==', 'pending')
+        .limit(1)
+        .get();
+      if (!existingClaim.empty) {
+        return res.status(200).json({ match: false, pending: true, claimId: existingClaim.docs[0].id });
+      }
+      const pendingId = `claim_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+      await db.collection('claims').doc(pendingId).set({
+        id: pendingId,
+        itemId,
+        itemTitle: typeof item?.title === 'string' ? item.title : '',
+        imageUrl: typeof item?.imageUrl === 'string' ? item.imageUrl : '',
+        claimerId: user.uid,
+        claimerName: typeof user.name === 'string' && user.name ? user.name : (user.email || '').split('@')[0] || 'Member',
+        claimerEmail: user.email || '',
+        claimerContact: '',
+        finderId: item?.userId,
+        securityQuestion: typeof item?.securityQuestion === 'string' && item.securityQuestion ? item.securityQuestion : 'Please verify physical details for item ownership confirmation.',
+        providedAnswer: claimerAnswer.trim().slice(0, 1000),
+        status: 'pending',
+        autoVerified: false,
+        manualOverride: false,
+        isReadByFinder: false,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+      return res.status(200).json({ match: false, pending: true, claimId: pendingId });
     }
 
     // The expected answer comes ONLY from the private collection, never from the client.
