@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import rateLimit from 'express-rate-limit';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore as getAdminFirestore } from 'firebase-admin/firestore';
 import statsHandler from './api/stats';
 
 if (!getApps().length) initializeApp();
@@ -154,7 +154,34 @@ app.post('/api/verify-claim', apiLimiter, requireAuth, async (req, res) => {
     const response = await getGeminiClient().models.generateContent({ model: 'gemini-2.0-flash', contents: [{ role: 'user', parts: [{ text: `You are a verification engine for a Lost and Found system. Determine whether the claimant answer reasonably matches the owner's expected answer. Allow reasonable typos, phrasing differences, or synonyms, but reject gibberish or contradictions. Owner's Secret Question: ${securityQuestion || 'N/A'} Owner's Expected Answer: ${secretAnswer} Claimant's Answer: ${claimerAnswer.trim()}` }] }], config: { responseMimeType: 'application/json', responseSchema: { type: Type.OBJECT, properties: { match: { type: Type.BOOLEAN }, reason: { type: Type.STRING } }, required: ['match', 'reason'] } } });
     if (!response.text) throw new Error('No output from Gemini');
     const parsed = JSON.parse(response.text.trim());
-    res.json({ match: parsed.match === true, reason: typeof parsed.reason === 'string' ? parsed.reason.slice(0, 300) : 'Verification completed.' });
+    const match = parsed.match === true;
+
+    // A matching answer is approved HERE, on the server. Clients cannot create an
+    // "approved" claim themselves (the security rules only allow "pending").
+    let claimId: string | undefined;
+    if (match) {
+      claimId = `claim_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+      await adminDb.collection('claims').doc(claimId).set({
+        id: claimId,
+        itemId,
+        itemTitle: typeof itemData?.title === 'string' ? itemData.title : '',
+        imageUrl: typeof itemData?.imageUrl === 'string' ? itemData.imageUrl : '',
+        claimerId: userUid,
+        claimerName: typeof (req as any).user?.name === 'string' && (req as any).user?.name ? (req as any).user?.name : ((req as any).user?.email || '').split('@')[0] || 'Member',
+        claimerEmail: (req as any).user?.email || '',
+        claimerContact: '',
+        finderId: itemData?.userId,
+        securityQuestion: securityQuestion || 'Please verify physical details for item ownership confirmation.',
+        providedAnswer: claimerAnswer.trim().slice(0, 1000),
+        status: 'approved',
+        autoVerified: true,
+        manualOverride: false,
+        isReadByFinder: false,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+    res.json({ match, claimId, reason: match ? 'Answer verified.' : "Your answer did not match the owner's answer." });
   } catch (error) {
     console.error('Claim verification error:', error);
     res.status(500).json({ error: 'Internal server error verifying claim.' });

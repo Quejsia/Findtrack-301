@@ -184,6 +184,7 @@ export default function ItemDetail({
 
     try {
       let autoApproved = false;
+      let serverCreatedClaim = false;
       const normalizedUserAnswer = answer.trim().toLowerCase();
       const hasSecurityQuestion = !!item.securityQuestion && item.securityQuestion.trim().length > 0;
 
@@ -216,6 +217,8 @@ export default function ItemDetail({
             }
             
             autoApproved = !!data.match; // set true if match
+            // The server creates approved claims itself (rules only let clients create 'pending').
+            serverCreatedClaim = autoApproved && typeof data.claimId === 'string';
           } else {
             throw new Error('API server returned error status.');
           }
@@ -233,6 +236,7 @@ export default function ItemDetail({
         }
       }
 
+      if (!serverCreatedClaim) {
       const claimPayload: Claim = {
         id: claimId,
         itemId: item.id,
@@ -245,8 +249,8 @@ export default function ItemDetail({
         finderId: item.userId,
         securityQuestion: item.securityQuestion || 'Please verify physical details for item ownership confirmation.',
         providedAnswer: answer.trim(),
-        status: autoApproved ? 'approved' : 'pending',
-        autoVerified: autoApproved,
+        status: 'pending',
+        autoVerified: false,
         manualOverride: false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -257,6 +261,7 @@ export default function ItemDetail({
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
+      }
 
       if (autoApproved) {
         alert('Ownership verified successfully! Contact details unlocked.');

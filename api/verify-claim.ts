@@ -1,7 +1,7 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore } from 'firebase-admin/firestore';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 
 if (!getApps().length) {
   // Vercel has no default Google credentials, so use the service-account JSON from the
@@ -140,9 +140,36 @@ Claimant's answer (untrusted): ${JSON.stringify(claimerAnswer.trim())}`;
     const parsed = JSON.parse(response.text.trim());
     const match = parsed?.match === true;
 
+    // A matching answer is approved HERE, on the server. Clients cannot create an
+    // "approved" claim themselves (the security rules only allow "pending").
+    let claimId: string | undefined;
+    if (match) {
+      claimId = `claim_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+      await db.collection('claims').doc(claimId).set({
+        id: claimId,
+        itemId,
+        itemTitle: typeof item?.title === 'string' ? item.title : '',
+        imageUrl: typeof item?.imageUrl === 'string' ? item.imageUrl : '',
+        claimerId: user.uid,
+        claimerName: typeof user.name === 'string' && user.name ? user.name : (user.email || '').split('@')[0] || 'Member',
+        claimerEmail: user.email || '',
+        claimerContact: '',
+        finderId: item?.userId,
+        securityQuestion: securityQuestion || 'Please verify physical details for item ownership confirmation.',
+        providedAnswer: claimerAnswer.trim().slice(0, 1000),
+        status: 'approved',
+        autoVerified: true,
+        manualOverride: false,
+        isReadByFinder: false,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      });
+    }
+
     // Generic wording only: the model's free text is never sent to the claimant.
     return res.status(200).json({
       match,
+      claimId,
       reason: match
         ? 'Answer verified.'
         : "Your answer did not match the owner's answer.",

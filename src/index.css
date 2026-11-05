@@ -1022,11 +1022,11 @@ main {
 .skeleton-recent { height: 68px; border-radius: var(--radius-md); margin-bottom: 10px; }
 .skeleton-welcome { height: 120px; border-radius: var(--radius-lg); margin-bottom: 20px; }
 
-/* ── ONBOARDING OVERLAY ── */
+/* ── ONBOARDING OVERLAY (app theme: green + cream) ── */
 .onboard-overlay {
   position: fixed; inset: 0; z-index: 900;
-  background: rgba(6,15,30,0.85);
-  backdrop-filter: blur(8px);
+  background: rgba(20,40,34,0.72);
+  backdrop-filter: blur(6px);
   display: flex; align-items: center; justify-content: center;
   padding: 20px;
   animation: fadeInOver 0.4s ease;
@@ -1035,9 +1035,9 @@ main {
 @keyframes fadeInOver { from { opacity: 0; } to { opacity: 1; } }
 
 .onboard-card {
-  background: white; border-radius: 28px;
+  background: var(--color-surface); border-radius: 28px;
   width: 100%; max-width: 400px;
-  box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.35);
   overflow: hidden;
   animation: onboardPop 0.45s cubic-bezier(.34,1.56,.64,1) both;
 }
@@ -1048,21 +1048,21 @@ main {
 }
 .onboard-pip {
   flex: 1; height: 4px; border-radius: 2px;
-  background: #e2e8f0; transition: background 0.4s;
+  background: var(--color-surface-variant); transition: background 0.4s;
 }
-.onboard-pip.done { background: var(--sky); }
-.onboard-pip.active { background: var(--sky); }
+.onboard-pip.done { background: var(--color-primary); }
+.onboard-pip.active { background: var(--color-primary); }
 
 .onboard-visual {
-  height: 180px;
+  height: 170px; margin: 16px 24px 0; border-radius: 20px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 80px;
-  background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+  font-size: 64px;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dim));
   position: relative; overflow: hidden;
 }
 .onboard-visual::after {
   content: ''; position: absolute; inset: 0;
-  background: radial-gradient(circle at 70% 30%, rgba(14,165,233,0.12), transparent 60%);
+  background: radial-gradient(circle at 70% 30%, rgba(154,244,214,0.28), transparent 60%);
 }
 .onboard-icon-wrap {
   animation: onboardFloat 3s ease-in-out infinite;
@@ -1070,43 +1070,42 @@ main {
 }
 @keyframes onboardFloat {
   0%,100% { transform: translateY(0) rotate(-3deg); }
-  50%      { transform: translateY(-12px) rotate(3deg); }
+  50%      { transform: translateY(-10px) rotate(3deg); }
 }
 
-.onboard-body { padding: 24px 28px 28px; }
+.onboard-body { padding: 22px 28px 26px; }
 .onboard-step-label {
   font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase; color: var(--sky); margin-bottom: 8px;
+  text-transform: uppercase; color: var(--color-primary); margin-bottom: 8px;
 }
 .onboard-title {
   font-family: 'Poppins', sans-serif; font-size: 22px; font-weight: 800;
-  color: #0f172a; margin-bottom: 10px; line-height: 1.2;
+  color: var(--color-on-surface); margin-bottom: 10px; line-height: 1.2;
 }
 .onboard-desc {
-  font-size: 14px; color: #64748b; line-height: 1.65; margin-bottom: 24px;
+  font-size: 14px; color: var(--color-on-surface-variant); line-height: 1.65; margin-bottom: 24px;
 }
 .onboard-actions { display: flex; gap: 10px; align-items: center; }
 .onboard-next {
   flex: 1; padding: 14px;
-  background: var(--sky);
+  background: var(--color-primary);
   border: none; border-radius: 13px;
   color: white; font-size: 15px; font-weight: 700;
   font-family: 'DM Sans', sans-serif; cursor: pointer;
-  box-shadow: 0 4px 16px rgba(0,56,168,0.35);
+  box-shadow: 0 4px 16px rgba(1,114,90,0.3);
   transition: all 0.2s;
 }
-.onboard-next:hover { 
-  background: var(--mint); 
-  color: var(--sky-dark); 
-  transform: translateY(-1px); 
-  box-shadow: 0 8px 24px rgba(252,209,22,0.45); 
+.onboard-next:hover {
+  background: var(--color-primary-dim);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(1,114,90,0.35);
 }
 .onboard-skip {
-  background: none; border: none; color: #94a3b8;
+  background: none; border: none; color: var(--color-on-surface-variant);
   font-size: 13px; cursor: pointer; font-family: 'DM Sans', sans-serif;
   padding: 8px; transition: color 0.2s;
 }
-.onboard-skip:hover { color: #64748b; }
+.onboard-skip:hover { color: var(--color-primary); }
 
 /* ── SMART MATCH BANNER ── */
 .match-banner {
@@ -1296,3 +1295,7 @@ main {
   --font-inter: "Inter", sans-serif;
   --font-dmsans: "DM Sans", sans-serif;
 }
+
+/* Report form: never let fields push the layout wider than the screen on phones */
+#report form { min-width: 0; }
+#report input, #report select, #report textarea { max-width: 100%; min-width: 0; box-sizing: border-box; }

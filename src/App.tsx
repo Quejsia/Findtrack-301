@@ -2338,7 +2338,7 @@ export default function App() {
               id="report"
               className={`${activeTab === "report" ? "block" : "hidden"}`}
             >
-              <div className="max-w-3xl mx-auto space-y-8">
+              <div className="max-w-3xl mx-auto space-y-8 w-full min-w-0">
                 <header className="mb-8">
                   <h2 className="font-headline-lg text-3xl font-bold text-on-surface">{t('dashboard.reportAnItem')}</h2>
                   <p className="font-body-md text-on-surface-variant mt-2">{t('dashboard.fillInTheDetailsBelowOurSmartMatchingSystemWillHelpFindTheOwnerOrTheItem')}</p>
@@ -2347,13 +2347,13 @@ export default function App() {
                 <div className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-sm overflow-hidden">
                   {/* Stepper Header */}
                   <div className="flex border-b border-outline-variant bg-surface-variant/50">
-                    <div className={`flex-1 py-4 px-6 text-center text-sm font-bold border-b-2 ${reportStep >= 1 ? 'border-primary text-primary' : 'border-transparent text-outline'}`}>
+                    <div className={`flex-1 py-3 sm:py-4 px-1 sm:px-6 text-center text-xs sm:text-sm font-bold border-b-2 ${reportStep >= 1 ? 'border-primary text-primary' : 'border-transparent text-outline'}`}>
                       {t('dashboard.1BasicInfo')}
                     </div>
-                    <div className={`flex-1 py-4 px-6 text-center text-sm font-bold border-b-2 ${reportStep >= 2 ? 'border-primary text-primary' : 'border-transparent text-outline'}`}>
+                    <div className={`flex-1 py-3 sm:py-4 px-1 sm:px-6 text-center text-xs sm:text-sm font-bold border-b-2 ${reportStep >= 2 ? 'border-primary text-primary' : 'border-transparent text-outline'}`}>
                       {t('dashboard.2Details')}
                     </div>
-                    <div className={`flex-1 py-4 px-6 text-center text-sm font-bold border-b-2 ${reportStep >= 3 ? 'border-primary text-primary' : 'border-transparent text-outline'}`}>
+                    <div className={`flex-1 py-3 sm:py-4 px-1 sm:px-6 text-center text-xs sm:text-sm font-bold border-b-2 ${reportStep >= 3 ? 'border-primary text-primary' : 'border-transparent text-outline'}`}>
                       {t('dashboard.3Verification')}
                     </div>
                   </div>
@@ -2395,7 +2395,7 @@ export default function App() {
                         return;
                       }
                     }}
-                    className="p-6 md:p-8 space-y-6"
+                    className="p-4 sm:p-6 md:p-8 space-y-6"
                   >
                     {/* STEP 1: Basic Info */}
                     {reportStep === 1 && (
@@ -2461,7 +2461,7 @@ export default function App() {
                     )}
 
                     {/* Footer Actions */}
-                    <div className="pt-6 border-t border-outline-variant flex justify-between items-center mt-8">
+                    <div className="pt-6 border-t border-outline-variant flex flex-wrap justify-between items-center gap-3 mt-8">
                       {reportStep > 1 ? (
                         <button type="button" onClick={() => setReportStep(reportStep - 1)} className="px-6 py-2.5 rounded-full font-label-md font-bold text-on-surface border border-outline-variant hover:bg-surface-variant transition-colors">
                           {t('report.back')}

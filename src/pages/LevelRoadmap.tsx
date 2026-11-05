@@ -196,16 +196,16 @@ export const LevelRoadmap: React.FC<LevelRoadmapProps> = ({
             })}
           </div>
 
-          <div className="bg-surface-container-lowest rounded-xl border border-surface-variant p-6 space-y-4 shadow-sm">
+          <div className="bg-surface-container-lowest rounded-xl border border-surface-variant p-4 sm:p-6 space-y-4 shadow-sm">
             <div className="flex items-center gap-2 pb-2 border-b border-surface-variant"><TrendingUp className="h-5 w-5 text-primary" /><h3 className="font-headline-md text-base font-bold text-on-surface">Impact Rank Path</h3></div>
             <div className="space-y-4">
               {levels.map((lvl) => {
                 const LvlIcon = lvl.icon;
                 const isCurrent = totalPoints >= lvl.minPoints && totalPoints <= lvl.maxPoints;
                 const isPassed = totalPoints > lvl.maxPoints;
-                return <div key={lvl.level} className={`flex items-start gap-4 p-3 rounded-xl transition-colors ${isCurrent ? "bg-primary-container/10 border border-primary/20" : isPassed ? "opacity-80" : "opacity-60"}`}>
+                return <div key={lvl.level} className={`flex items-start gap-3 sm:gap-4 p-3 rounded-xl transition-colors ${isCurrent ? "bg-primary-container/10 border border-primary/20" : isPassed ? "opacity-80" : "opacity-60"}`}>
                   <div className={`p-2 rounded-full border ${lvl.badgeColor} shrink-0`}><LvlIcon className="h-4 w-4 text-primary" /></div>
-                  <div className="flex-1 space-y-0.5"><div className="flex items-center justify-between"><h4 className="font-headline-sm text-sm font-semibold text-on-surface">Level {lvl.level}: {lvl.name}</h4><span className="font-mono text-[11px] text-on-surface-variant font-medium">{lvl.minPoints === 500 ? "500+ pts" : `${lvl.minPoints} - ${lvl.maxPoints} pts`}</span></div><p className="font-body-sm text-xs text-on-surface-variant">{lvl.description}</p>{isCurrent && <span className="inline-block mt-1 bg-primary text-on-primary text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">Your Current Rank</span>}</div>
+                  <div className="flex-1 min-w-0 space-y-1"><div className="flex flex-col gap-0.5 sm:flex-row sm:items-center sm:justify-between sm:gap-3"><h4 className="font-headline-sm text-sm font-semibold text-on-surface break-words">Level {lvl.level}: {lvl.name}</h4><span className="font-mono text-[11px] text-on-surface-variant font-medium whitespace-nowrap">{lvl.minPoints === 500 ? "500+ pts" : `${lvl.minPoints} - ${lvl.maxPoints} pts`}</span></div><p className="font-body-sm text-xs text-on-surface-variant">{lvl.description}</p>{isCurrent && <span className="inline-block mt-1 bg-primary text-on-primary text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">Your Current Rank</span>}</div>
                 </div>;
               })}
             </div>
