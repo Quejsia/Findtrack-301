@@ -30,8 +30,8 @@ export const SettingsPage: React.FC = () => {
       {/* Toast Notification */}
       {showToast && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className="bg-surface-container-highest border border-outline-variant/30 text-on-surface px-4 py-3 rounded-xl shadow-lg flex items-center gap-3">
-            <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+          <div className="bg-surface-container-highest border border-outline-variant/30 text-on-surface px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 whitespace-nowrap">
+            <div className="h-4 w-4 min-h-4 min-w-4 shrink-0 aspect-square border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
             <span className="font-label-md text-sm">{t('settings.language.changing')}</span>
           </div>
         </div>

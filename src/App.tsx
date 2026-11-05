@@ -1158,9 +1158,16 @@ export default function App() {
       // Deterministic chat ID
       const chatId = [user.uid, otherUserUid, itemId].sort().join("_");
       const chatRef = doc(db, "chats", chatId);
-      const chatSnap = await getDoc(chatRef);
+      // Reading a chat that does not exist yet is denied by the rules (they look at
+      // participants on the stored doc), so treat that denial as "no chat yet".
+      let chatExists = false;
+      try {
+        chatExists = (await getDoc(chatRef)).exists();
+      } catch (readErr: any) {
+        if (readErr?.code !== "permission-denied") throw readErr;
+      }
 
-      if (!chatSnap.exists()) {
+      if (!chatExists) {
         const itemRef = doc(db, "items", itemId);
         const itemSnap = await getDoc(itemRef);
         const itemTitle = itemSnap.exists()
@@ -1464,7 +1471,7 @@ export default function App() {
               </nav>
               <div className="flex items-center gap-4">
                 <button onClick={() => setCurrentView("login")} className="hidden md:block text-on-surface-variant font-medium text-sm hover:text-primary transition-colors duration-200 scale-95 active:scale-90">{t('landing.login')}</button>
-                <button onClick={() => setCurrentView("signup")} className="w-full sm:w-auto bg-primary text-white px-6 py-3 rounded-xl font-bold shadow-md hover:bg-primary-dim transition-colors flex items-center justify-center gap-2">{t('landing.getStarted')}</button>
+                <button onClick={() => setCurrentView("signup")} className="shrink-0 whitespace-nowrap bg-primary text-white px-4 py-2 text-sm rounded-xl font-semibold shadow-sm hover:bg-primary-dim transition-colors flex items-center justify-center gap-2">{t('landing.getStarted')}</button>
                 {/* Mobile Menu Button */}
                 <button 
                   className="md:hidden p-2 text-on-surface-variant hover:text-primary"
@@ -3332,9 +3339,11 @@ export default function App() {
                         <div className="md:col-span-2">
                           <label className="block font-label-md text-sm text-on-surface-variant mb-2" htmlFor="profBio">{t('profile.bio')}</label>
                           <textarea 
-                            className="shadow-sm w-full bg-surface-container-lowest border border-outline rounded-xl p-3 text-on-surface focus:ring-2 focus:ring-primary focus:border-primary transition-shadow font-body-md" 
+                            className="shadow-sm w-full resize-none bg-surface-container-lowest border border-outline rounded-xl p-3 text-on-surface focus:ring-2 focus:ring-primary focus:border-primary transition-shadow font-body-md" 
                             id="profBio" 
                             rows={3}
+                            maxLength={300}
+                            style={{ height: "6.5rem", minHeight: "6.5rem", maxHeight: "10rem" }}
                             placeholder={t("generated.string_431")}
                             value={profileBio}
                             onChange={(e) => setProfileBio(e.target.value)}
