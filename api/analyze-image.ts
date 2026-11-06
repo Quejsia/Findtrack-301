@@ -1,6 +1,7 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+// @ts-ignore - no bundled types needed
+import * as jwtLib from 'jsonwebtoken';
 
 if (!getApps().length) {
   // Vercel has no default Google credentials, so use the service-account JSON from the
@@ -32,6 +33,44 @@ function getGeminiClient(): GoogleGenAI {
   return aiClient;
 }
 
+
+// Verifies a Firebase ID token WITHOUT firebase-admin/auth. That module pulls in jwks-rsa,
+// which crashes on Vercel (it require()s the ESM-only "jose" package), so every request 500s.
+let certCache: { certs: Record<string, string>; exp: number } | null = null;
+async function getGoogleCerts(): Promise<Record<string, string>> {
+  if (certCache && certCache.exp > Date.now()) return certCache.certs;
+  const r = await fetch('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com');
+  if (!r.ok) throw new Error('Could not load Google signing certificates');
+  const certs = (await r.json()) as Record<string, string>;
+  const m = /max-age=(\d+)/.exec(r.headers.get('cache-control') || '');
+  certCache = { certs, exp: Date.now() + (m ? Number(m[1]) : 3600) * 1000 };
+  return certs;
+}
+function getProjectId(): string {
+  const fromEnv = process.env.FIREBASE_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT;
+  if (fromEnv) return fromEnv;
+  try {
+    const id = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT || '{}').project_id;
+    if (id) return id;
+  } catch {}
+  throw new Error('Firebase project id is not configured');
+}
+async function verifyFirebaseToken(token: string): Promise<any> {
+  const jwt: any = (jwtLib as any).verify ? jwtLib : (jwtLib as any).default;
+  const header = jwt.decode(token, { complete: true })?.header;
+  const certs = await getGoogleCerts();
+  const cert = header?.kid ? certs[header.kid] : undefined;
+  if (!cert) throw new Error('Unknown signing key');
+  const projectId = getProjectId();
+  const payload: any = jwt.verify(token, cert, {
+    algorithms: ['RS256'],
+    audience: projectId,
+    issuer: `https://securetoken.google.com/${projectId}`,
+  });
+  if (!payload.sub || typeof payload.sub !== 'string') throw new Error('Invalid subject');
+  return { ...payload, uid: payload.sub };
+}
+
 async function authenticate(req: any, res: any) {
   const header = req.headers?.authorization;
   if (typeof header !== 'string' || !header.startsWith('Bearer ')) {
@@ -44,7 +83,7 @@ async function authenticate(req: any, res: any) {
     return null;
   }
   try {
-    const decoded = await getAuth().verifyIdToken(token);
+    const decoded = await verifyFirebaseToken(token);
     if (!decoded.email_verified) {
       res.status(403).json({ error: 'Email verification is required.' });
       return null;

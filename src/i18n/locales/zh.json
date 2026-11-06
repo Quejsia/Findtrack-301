@@ -607,7 +607,7 @@
     "allItems": "所有物品",
     "location": "位置",
     "typeLocation": "输入位置...",
-    "searchResultsStart": "搜索结果 (",
+    "searchResultsStart": "搜索结果",
     "searchResultsEnd": " 个)",
     "viewDetails": "查看详情",
     "lostOnly": "仅丢失",

@@ -1018,10 +1018,10 @@ export default function App() {
     const idx = pins.indexOf(itemId);
     if (idx > -1) {
       pins.splice(idx, 1);
-      triggerToast("📍 Item unpinned", "success");
+      triggerToast("Item unpinned", "success");
     } else {
       pins.push(itemId);
-      triggerToast("📌 Item pinned!", "success");
+      triggerToast("Item pinned", "success");
     }
     setPinnedIds(pins);
     localStorage.setItem("pinnedItems", JSON.stringify(pins));
@@ -2180,7 +2180,7 @@ export default function App() {
             <div className="pt-8 pb-8 px-8 shrink-0">
               <div className="flex justify-between items-start">
                 <div className="flex flex-col gap-4">
-                  <img src="/logo-mark.svg" alt="FindTrack Logo" className="w-16 h-16 object-contain my-2" onError={(e) => { e.currentTarget.style.display='none'; }} />
+                  <img src="/logo-mark-light.svg" alt="FindTrack Logo" className="w-14 h-14 object-contain my-2" onError={(e) => { e.currentTarget.style.display='none'; }} />
                   <div className="mt-1">
                     <h1 className="text-3xl font-bold tracking-tight text-white font-poppins leading-none">
                       FindTrack
@@ -2675,7 +2675,7 @@ export default function App() {
                             }}
                             className={`absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center transition-colors ${pinned ? "bg-tertiary text-on-tertiary shadow-md" : "bg-surface/80 backdrop-blur-sm text-on-surface-variant hover:text-primary"}`}
                           >
-                            <MapPin className="h-4.5 w-4.5" fill={pinned ? "currentColor" : "none"} />
+                            <Pin className="h-4 w-4" fill={pinned ? "currentColor" : "none"} />
                           </button>
                         </div>
                         <div className="p-4 flex-1 flex flex-col">
