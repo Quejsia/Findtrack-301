@@ -208,6 +208,48 @@ app.post('/api/verify-claim', apiLimiter, requireAuth, async (req, res) => {
   }
 });
 
+app.post('/api/contact', apiLimiter, requireAuth, async (req, res) => {
+  try {
+    const { itemId, contactInfo } = req.body || {};
+    const uid = (req as any).user?.uid;
+    if (typeof itemId !== 'string' || !itemId || itemId.length > 128 || typeof contactInfo !== 'string' || !contactInfo.trim() || contactInfo.length > 300) {
+      return void res.status(400).json({ error: 'Missing or invalid fields (itemId and contactInfo).' });
+    }
+    const ref = getAdminFirestore().collection('itemContacts').doc(itemId);
+    const existing = await ref.get();
+    if (existing.exists && existing.data()?.ownerId !== uid) return void res.status(403).json({ error: 'Not allowed.' });
+    await ref.set({ ownerId: uid, contactInfo: contactInfo.trim(), updatedAt: new Date() });
+    res.json({ ok: true });
+  } catch (error) {
+    console.error('Contact details error:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+app.get('/api/contact', apiLimiter, requireAuth, async (req, res) => {
+  try {
+    const uid = (req as any).user?.uid;
+    const itemId = typeof req.query.itemId === 'string' ? req.query.itemId : '';
+    if (!itemId || itemId.length > 128) return void res.status(400).json({ error: 'Missing itemId.' });
+    const adminDb = getAdminFirestore();
+    const itemDoc = await adminDb.collection('items').doc(itemId).get();
+    if (!itemDoc.exists) return void res.status(404).json({ error: 'Item not found.' });
+    const item = itemDoc.data() || {};
+    let allowed = item.userId === uid || !(typeof item.securityQuestion === 'string' && item.securityQuestion.trim());
+    if (!allowed) {
+      const approved = await adminDb.collection('claims').where('itemId', '==', itemId).where('claimerId', '==', uid).where('status', '==', 'approved').limit(1).get();
+      allowed = !approved.empty;
+    }
+    if (!allowed) return void res.status(403).json({ error: 'Contact details are locked.' });
+    const contactDoc = await adminDb.collection('itemContacts').doc(itemId).get();
+    const contactInfo = contactDoc.exists ? contactDoc.data()?.contactInfo : item.contactInfo;
+    res.json({ contactInfo: typeof contactInfo === 'string' ? contactInfo : '' });
+  } catch (error) {
+    console.error('Contact details error:', error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
 async function setupViteMiddleware() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({ server: { middlewareMode: true }, appType: 'spa' });

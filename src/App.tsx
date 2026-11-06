@@ -6,6 +6,8 @@ import Home from './pages/Home';
 import PrivacyPage from './pages/legal/PrivacyPage';
 import TermsPage from './pages/legal/TermsPage';
 import { AboutPage, SafetyPage, HelpPage, ContactPage } from './pages/InfoPages';
+import ContactInfoText from "./components/ContactInfoText";
+import { saveContactInfo } from "./lib/contactApi";
 import { Trophy, Coffee as CoffeeIcon, MailCheck } from "lucide-react";
 import {
   User,
@@ -954,7 +956,7 @@ export default function App() {
       location: reportLocation.trim() || "Unknown Location",
       status: "active",
       contactName: profileName || "Student",
-      contactInfo: `${profileContact || "No contact provided"} | Email: ${reportEmail.trim() || profileEmail || "No email provided"}`,
+      contactInfo: "", // stored privately on the server instead (see saveContactInfo)
       date: reportDate || new Date().toISOString(),
       imageUrl: finalImageUrl,
       createdAt: serverTimestamp(),
@@ -964,6 +966,10 @@ export default function App() {
     };
 
     try {
+      await saveContactInfo(
+        payloadId,
+        `${profileContact || "No contact provided"} | Email: ${reportEmail.trim() || profileEmail || "No email provided"}`,
+      );
       await setDoc(doc(db, "items", payloadId), reportData);
 
       // Save secret verification answer in a separate private collection 'itemSecrets'
@@ -2911,7 +2917,7 @@ export default function App() {
                               </div>
                               {isUnlocked ? (
                                 <p className="text-[14px] font-body-md text-on-surface font-semibold mt-0.5 select-text break-words bg-primary-container/20 px-2 py-1 rounded border border-primary/10">
-                                  {r.contactInfo}
+                                  <ContactInfoText itemId={r.id} legacy={r.contactInfo} />
                                 </p>
                               ) : (
                                 <div className="space-y-1">

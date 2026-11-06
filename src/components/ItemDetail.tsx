@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Item, Claim } from '../types';
 import { submitClaim } from '../lib/claimApi';
+import ContactInfoText from './ContactInfoText';
 import { motion, AnimatePresence } from 'motion/react';
 import { getCategoryIcon } from './ItemCard';
 import Matchmaker from './Matchmaker';
@@ -496,7 +497,7 @@ export default function ItemDetail({
                           </div>
                           <div>
                             <p className="font-sans text-[10px] text-on-surface-variant font-medium">{t('generated.string_473')}</p>
-                            <p className="font-sans text-xs text-on-surface font-bold truncate">{item.contactInfo}</p>
+                            <p className="font-sans text-xs text-on-surface font-bold truncate"><ContactInfoText itemId={item.id} legacy={item.contactInfo} /></p>
                           </div>
                         </div>
                       </div>
@@ -624,7 +625,7 @@ export default function ItemDetail({
                                 </div>
                                 <div className="min-w-0 flex-1">
                                   <p className="font-sans text-[10px] text-on-surface-variant font-medium">{t('itemDetail.contactCoordinates')}</p>
-                                  <p className="font-sans text-xs text-on-surface font-bold truncate">{item.contactInfo}</p>
+                                  <p className="font-sans text-xs text-on-surface font-bold truncate"><ContactInfoText itemId={item.id} legacy={item.contactInfo} /></p>
                                 </div>
                               </div>
                             </div>
