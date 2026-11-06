@@ -76,6 +76,9 @@ import {
   Zap,
   CheckSquare,
   X,
+  XCircle,
+  Sparkles,
+  BarChart3,
   ShoppingBag,
   MapIcon,
   Users,
@@ -179,6 +182,7 @@ export default function App() {
     return newMatchesNotif ? incomingClaims : [];
   }, [newMatchesNotif, incomingClaims]);
   const myClaims = useMyClaims(verifiedUid);
+  const [alertsShown, setAlertsShown] = useState(10);
   
   // Dynamic Points and Level Calculation for current user to keep synchronized
   const currentUserPointsAndLevel = useMemo(() => {
@@ -294,6 +298,8 @@ export default function App() {
   // Trigger custom toast notification
   const triggerToast = (msg: string, type: "success" | "error" = "success") => {
     const id = Math.random().toString();
+    // Icons are drawn by the toast itself, so drop any leading emoji from the text.
+    msg = msg.replace(/^[\s\p{Extended_Pictographic}\uFE0F\u200D\u2713\u2714\u2715]+/u, "");
     setToasts((prev) => [...prev, { id, msg, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
@@ -1463,8 +1469,13 @@ export default function App() {
       {/* ── TOAST MESSAGES FLOATER ── */}
       <div className="toast-container" id="toastContainer">
         {toasts.map((t) => (
-          <div key={t.id} className={`toast-msg ${t.type}`}>
-            {t.msg}
+          <div key={t.id} className={`toast-msg ${t.type} flex items-center gap-2`}>
+            {t.type === "error" ? (
+              <XCircle className="h-5 w-5 shrink-0 text-red-500" aria-hidden="true" />
+            ) : (
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" />
+            )}
+            <span>{t.msg}</span>
           </div>
         ))}
       </div>
@@ -2073,7 +2084,7 @@ export default function App() {
                   onClick={() => triggerToast("If the verification link is expired, request a new verification email.", "error")}
                   className="w-full flex items-center justify-center gap-2 p-3 bg-tertiary-container/10 hover:bg-tertiary-container/20 border border-tertiary-container/50 text-on-tertiary-container rounded-xl text-xs transition-colors font-medium shadow-sm"
                 >
-                  <span className="text-sm">❓</span>
+                  <HelpCircle className="h-4 w-4" aria-hidden="true" />
                   <span>Link says "Expired or already used"? Click here!</span>
                 </button>
               </div>
@@ -2930,9 +2941,9 @@ export default function App() {
                                   <span className="font-bold uppercase tracking-wider text-[10px]">{existingClaimForThisUser.status}</span>
                                 </div>
                                 <p className="leading-relaxed">
-                                  {existingClaimForThisUser.status === 'approved' && "✓ Your ownership proof was approved. Contact credentials are unlocked above."}
-                                  {existingClaimForThisUser.status === 'pending' && "⌛ Your claim is currently under manual review by the owner."}
-                                  {existingClaimForThisUser.status === 'rejected' && "❌ Your claim was declined by the owner."}
+                                  {existingClaimForThisUser.status === 'approved' && "Your ownership proof was approved. Contact credentials are unlocked above."}
+                                  {existingClaimForThisUser.status === 'pending' && "Your claim is currently under manual review by the owner."}
+                                  {existingClaimForThisUser.status === 'rejected' && "Your claim was declined by the owner."}
                                 </p>
                               </div>
                             )}
@@ -3153,7 +3164,7 @@ export default function App() {
                     </div>
                   </div>
 
-                  {activeIncomingClaims.map((claim) => {
+                  {activeIncomingClaims.slice(0, alertsShown).map((claim) => {
                     const isUnread = !claim.isReadByFinder;
                     const itemMatch = items.find(i => i.id === claim.itemId);
                     
@@ -3211,9 +3222,9 @@ export default function App() {
                   )}
                 </div>
                 
-                {activeIncomingClaims.length > 0 && (
+                {activeIncomingClaims.length > alertsShown && (
                   <div className="mt-8 flex justify-center">
-                    <button className="px-6 py-2 rounded-full bg-surface-container text-on-surface border border-outline-variant hover:bg-surface-variant transition-colors font-label-md text-sm shadow-sm">
+                    <button type="button" onClick={() => setAlertsShown((n) => n + 10)} className="px-6 py-2 rounded-full bg-surface-container text-on-surface border border-outline-variant hover:bg-surface-variant transition-colors font-label-md text-sm shadow-sm">
                       {t('alerts.loadOlderAlerts')}
                     </button>
                   </div>
@@ -3659,7 +3670,20 @@ export default function App() {
                           <div className="pt-4 border-t border-outline-variant flex space-x-3 mt-auto">
                             {r.claimed ? (
                               <>
-                                <button className="flex-1 bg-primary text-on-primary py-2 rounded-xl font-label-md text-sm hover:bg-primary-dim transition-colors flex items-center justify-center space-x-2">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const asOwner: any = incomingClaims.find((c: any) => c.itemId === r.id && c.status === "approved");
+                                    const asClaimer: any = myClaims.find((c: any) => c.itemId === r.id && c.status === "approved");
+                                    if (asOwner?.claimerId) handleStartChat(asOwner.claimerId, r.id);
+                                    else if (asClaimer && (r as any).userId) handleStartChat((r as any).userId, r.id);
+                                    else {
+                                      setSelectedItemId(r.id);
+                                      setActiveTab("itemDetail");
+                                    }
+                                  }}
+                                  className="flex-1 bg-primary text-on-primary py-2 rounded-xl font-label-md text-sm hover:bg-primary-dim transition-colors flex items-center justify-center space-x-2"
+                                >
                                   <MessageSquare className="h-4.5 w-4.5" />
                                   <span>{t('generated.string_278', 'Message Finder')}</span>
                                 </button>
@@ -4219,7 +4243,7 @@ export default function App() {
                       if (activeCategories.length === 0) {
                         return (
                           <div className="flex flex-col items-center justify-center h-48 text-outline-variant">
-                            <span className="text-4xl mb-2">📊</span>
+                            <BarChart3 className="h-10 w-10 mb-2 opacity-60" aria-hidden="true" />
                             <p className="text-xs text-on-surface-variant">{t('generated.string_323', 'No reported data yet')}</p>
                           </div>
                         );
@@ -4535,7 +4559,7 @@ export default function App() {
                     {/* App Info */}
                     <div className="bg-surface-container-lowest rounded-xl border border-outline-variant p-6 text-center">
                       <div className="w-12 h-12 bg-surface-variant rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <span className="text-xl">✨</span>
+                        <Sparkles className="h-5 w-5 text-primary" aria-hidden="true" />
                       </div>
                       <h4 className="font-bold text-on-surface">FindTrack</h4>
                       <p className="text-xs text-on-surface-variant mt-1 mb-4">{t('about.version', 'Version 2.0.0 (Beta)')}</p>
@@ -4682,7 +4706,7 @@ export default function App() {
                   id="onboardNext"
                 >
                   {onboardStep === ONBOARD_STEPS.length - 1
-                    ? "Get Started 🚀"
+                    ? "Get Started"
                     : "Next →"}
                 </button>
                 <button
@@ -4704,8 +4728,8 @@ export default function App() {
       {/* ── IMAGE ZOOM SYSTEM MODAL ── */}
       {zoomImg && (
         <div className="zoom-overlay" onClick={() => setZoomImg(null)}>
-          <button className="zoom-close" onClick={() => setZoomImg(null)}>
-            ✕
+          <button className="zoom-close" aria-label="Close" onClick={() => setZoomImg(null)}>
+            <X className="h-6 w-6" />
           </button>
           <img src={zoomImg} className="zoom-img" alt="Zoom view" />
           <div className="zoom-hint">Tap anywhere to close</div>

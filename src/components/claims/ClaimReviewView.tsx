@@ -29,11 +29,11 @@ export const ClaimReviewView: React.FC<Props> = ({ claim, item, onClose, trigger
           updatedAt: serverTimestamp()
         });
       }
-      triggerToast("✅ Ownership claim approved! Credentials unlocked.", "success");
+      triggerToast("Ownership claim approved! Credentials unlocked.", "success");
       onClose();
     } catch (err) {
       console.error("Error approving claim:", err);
-      triggerToast("❌ Action failed or unauthorized.", "error");
+      triggerToast("Action failed or unauthorized.", "error");
       setIsProcessing(false);
     }
   };
@@ -45,11 +45,11 @@ export const ClaimReviewView: React.FC<Props> = ({ claim, item, onClose, trigger
         status: "declined",
         updatedAt: serverTimestamp(),
       });
-      triggerToast("❌ Claim response declined.", "error");
+      triggerToast("Claim response declined.", "error");
       onClose();
     } catch (err) {
       console.error("Error rejecting claim:", err);
-      triggerToast("❌ Action failed.", "error");
+      triggerToast("Action failed.", "error");
       setIsProcessing(false);
     }
   };

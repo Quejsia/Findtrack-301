@@ -170,7 +170,7 @@ export default function ItemDetail({
     if (!currentUserUid) return;
 
     if (!answer.trim()) {
-      setError('Verification answer cannot be empty 🫙');
+      setError('Verification answer cannot be empty');
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
       return;
@@ -666,7 +666,7 @@ export default function ItemDetail({
                               
                               {existingClaim && existingClaim.status !== 'approved' && (
                                 <div className="py-2.5 text-center font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50 rounded-md border border-emerald-100 uppercase tracking-wider">
-                                  ✓ Claim Status: {existingClaim.status}
+                                  Claim Status: {existingClaim.status}
                                 </div>
                               )}
                             </div>

@@ -1,3 +1,4 @@
+import { Scale } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LegalLayout } from "../../components/layout/LegalLayout";
 
@@ -10,7 +11,7 @@ export default function TermsPage({ onBack }: TermsPageProps) {
 
   return (
     <LegalLayout
-      icon="⚖️"
+      icon={<Scale className="h-6 w-6" />}
       title={t("landing.termsOfService")}
       lastUpdatedLabel="FindTrack Community Terms"
       onBack={onBack}

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 interface LegalLayoutProps {
-  icon: string;
+  icon: ReactNode;
   title: string;
   lastUpdatedLabel: string;
   onBack: () => void;
@@ -21,7 +21,7 @@ export function LegalLayout({
       <div className="mx-auto w-full max-w-[800px] rounded-3xl border border-outline-variant/40 bg-surface p-6 shadow-[0_8px_32px_rgba(1,114,90,0.08)] sm:p-9">
         <div className="mb-8 flex items-center justify-between gap-4 border-b border-outline-variant/40 pb-5">
           <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-container text-2xl" aria-hidden="true">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-container text-primary" aria-hidden="true">
               {icon}
             </span>
             <div>

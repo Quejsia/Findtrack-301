@@ -52,7 +52,7 @@ export const MyClaimsView: React.FC<Props> = ({ claims, onViewItem }) => {
           </div>
           
           <div className="mb-4 flex-1">
-            <h3 className="font-headline-md text-lg text-on-surface mb-2">Claim on Item #{claim.itemId ? claim.itemId.substring(0,6).toUpperCase() : 'UNKNOWN'}</h3>
+            <h3 className="font-headline-md text-lg text-on-surface mb-2">Claim on {(claim as any).itemTitle || `Item #${claim.itemId ? claim.itemId.substring(0,6).toUpperCase() : 'UNKNOWN'}`}</h3>
             <p className="text-sm font-body-md text-on-surface-variant line-clamp-3">
               <span className="font-medium">Your answer: </span>
               {claim.providedAnswer}
