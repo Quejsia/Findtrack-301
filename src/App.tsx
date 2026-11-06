@@ -160,6 +160,8 @@ export default function App() {
   // Authentication & session state
   const [user, setUser] = useState<User | null>(null);
   const [loadingAuth, setLoadingAuth] = useState<boolean>(true);
+  // Firestore rules only allow verified users, so database listeners wait for this.
+  const verifiedUid = user && (!user.email || user.emailVerified) ? user.uid : undefined;
 
   // Form input validations / fields
   const [authEmail, setAuthEmail] = useState("");
@@ -172,11 +174,11 @@ export default function App() {
   const [items, setItems] = useState<ItemReport[]>([]);
   const [newMatchesNotif, setNewMatchesNotif] = useState<boolean>(true);
   const [communityAlertsNotif, setCommunityAlertsNotif] = useState<boolean>(true);
-  const incomingClaims = useIncomingClaims(auth.currentUser?.uid);
+  const incomingClaims = useIncomingClaims(verifiedUid);
   const activeIncomingClaims = useMemo(() => {
     return newMatchesNotif ? incomingClaims : [];
   }, [newMatchesNotif, incomingClaims]);
-  const myClaims = useMyClaims(auth.currentUser?.uid);
+  const myClaims = useMyClaims(verifiedUid);
   
   // Dynamic Points and Level Calculation for current user to keep synchronized
   const currentUserPointsAndLevel = useMemo(() => {
@@ -394,42 +396,6 @@ export default function App() {
           console.error(e);
         }
 
-        // Fetch/sync user settings from Firestore database
-        const userDocRef = doc(db, "users", currentUser.uid);
-        getDoc(userDocRef).then((docSnap) => {
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            if (data.name) setProfileName(data.name);
-            if (data.contact) setProfileContact(data.contact);
-            if (data.location) setProfileLocation(data.location);
-            if (data.bio) setProfileBio(data.bio);
-            if (data.avatar && !data.avatar.includes("dicebear.com")) {
-              setProfileAvatar(data.avatar);
-            } else {
-              setProfileAvatar("");
-            }
-            if (data.newMatchesNotif !== undefined) setNewMatchesNotif(data.newMatchesNotif);
-            if (data.communityAlertsNotif !== undefined) setCommunityAlertsNotif(data.communityAlertsNotif);
-          } else {
-            // First time login - create database record
-            const initialData = {
-              id: currentUser.uid,
-              name: currentUser.displayName || currentUser.email?.split("@")[0] || "User",
-              email: currentUser.email || "",
-              contact: "",
-              location: "",
-              bio: "",
-              avatar: "",
-              newMatchesNotif: true,
-              communityAlertsNotif: true,
-              createdAt: new Date().toISOString()
-            };
-            setDoc(userDocRef, initialData).catch(console.error);
-          }
-        }).catch((err) => {
-          console.error("Failed to fetch user settings from Firestore:", err);
-        });
-
         // Block unverified email users from accessing protected views (dashboard)
         const path = window.location.pathname;
         if (["/privacy", "/terms", "/about", "/safety", "/help", "/contact"].includes(path)) {
@@ -508,11 +474,58 @@ export default function App() {
     return () => window.removeEventListener("popstate", handlePopState);
   }, [user]);
 
+  // Load (or create) the profile document once the user is verified; unverified users
+  // are denied by the security rules, so this must not run before verification.
+  useEffect(() => {
+    if (!verifiedUid || !user) return;
+      // Fetch/sync user settings from Firestore database
+      const userDocRef = doc(db, "users", user.uid);
+      getDoc(userDocRef).then((docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.name) setProfileName(data.name);
+          if (data.contact) setProfileContact(data.contact);
+          if (data.location) setProfileLocation(data.location);
+          if (data.bio) setProfileBio(data.bio);
+          if (data.avatar && !data.avatar.includes("dicebear.com")) {
+            setProfileAvatar(data.avatar);
+          } else {
+            setProfileAvatar("");
+          }
+          if (data.newMatchesNotif !== undefined) setNewMatchesNotif(data.newMatchesNotif);
+          if (data.communityAlertsNotif !== undefined) setCommunityAlertsNotif(data.communityAlertsNotif);
+        } else {
+          // First time login - create database record
+          const initialData = {
+            id: user.uid,
+            name: user.displayName || user.email?.split("@")[0] || "User",
+            email: user.email || "",
+            contact: "",
+            location: "",
+            bio: "",
+            avatar: "",
+            newMatchesNotif: true,
+            communityAlertsNotif: true,
+            createdAt: new Date().toISOString()
+          };
+          setDoc(userDocRef, initialData).catch(console.error);
+        }
+      }).catch((err) => {
+        console.error("Failed to fetch user settings from Firestore:", err);
+      });
+
+
+  }, [verifiedUid]);
+
   // 1.5. Automatic email verification polling when on verify-email view
   useEffect(() => {
     if (currentView !== "verify-email") return;
 
-    const interval = setInterval(async () => {
+    let busy = false;
+    const check = async () => {
+      // Skip while the tab is in the background or the phone is offline.
+      if (busy || document.hidden || !navigator.onLine) return;
+      busy = true;
       try {
         if (auth.currentUser) {
           await auth.currentUser.reload();
@@ -522,12 +535,26 @@ export default function App() {
             setCurrentView("verification-success");
           }
         }
-      } catch (e) {
-        console.error("Auto verification check failed:", e);
+      } catch (e: any) {
+        // A dropped connection is expected on mobile; try again on the next tick.
+        if (e?.code !== "auth/network-request-failed") {
+          console.error("Auto verification check failed:", e);
+        }
+      } finally {
+        busy = false;
       }
-    }, 3000);
+    };
 
-    return () => clearInterval(interval);
+    const interval = setInterval(check, 4000);
+    const onVisible = () => { if (!document.hidden) check(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", check);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", check);
+    };
   }, [currentView, user]);
 
   // 2. Real-time Firestore Sync of items / reports

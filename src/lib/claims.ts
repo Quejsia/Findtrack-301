@@ -23,7 +23,7 @@ export function useIncomingClaims(userId: string | undefined) {
         return bTime - aTime;
       });
       setIncomingClaims(list);
-    });
+    }, (err) => console.warn('Claims listener (incoming):', err.code));
     return unsubscribe;
   }, [userId]);
 
@@ -50,7 +50,7 @@ export function useMyClaims(userId: string | undefined) {
         return bTime - aTime;
       });
       setMyClaims(list);
-    });
+    }, (err) => console.warn('Claims listener (mine):', err.code));
     return unsubscribe;
   }, [userId]);
 
