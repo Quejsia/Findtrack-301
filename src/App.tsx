@@ -6,7 +6,7 @@ import Home from './pages/Home';
 import PrivacyPage from './pages/legal/PrivacyPage';
 import TermsPage from './pages/legal/TermsPage';
 import { AboutPage, SafetyPage, HelpPage, ContactPage } from './pages/InfoPages';
-import { Trophy, Coffee as CoffeeIcon, Leaf, MailCheck } from "lucide-react";
+import { Trophy, Coffee as CoffeeIcon, MailCheck } from "lucide-react";
 import {
   User,
   onAuthStateChanged,
@@ -1483,7 +1483,7 @@ export default function App() {
           <header className="w-full top-0 z-50 bg-surface shadow-sm sticky">
             <div className="flex justify-between items-center h-16 px-4 md:px-8 max-w-7xl mx-auto">
               <div className="font-sans text-2xl font-bold text-primary tracking-tight flex items-center gap-2">
-                <img src="/logo.png" alt="FindTrack Logo" className="w-10 h-10 object-contain p-1 mx-1" onError={(e) => { e.currentTarget.style.display='none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                <img src="/logo-mark.svg" alt="FindTrack Logo" className="w-10 h-10 object-contain p-1 mx-1" onError={(e) => { e.currentTarget.style.display='none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
                 <MapPin className="h-6 w-6 text-primary hidden" />
                 FindTrack
               </div>
@@ -1542,7 +1542,7 @@ export default function App() {
               </div>
               <div className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 text-center mt-8 w-full">
                 <div className="bg-surface-container-lowest/85 backdrop-blur-md border border-white/30 p-8 md:p-12 rounded-xl inline-block max-w-3xl shadow-lg w-full">
-                  <img src="/logo.png" alt="FindTrack Logo" className="w-40 h-40 object-contain mx-auto mb-6 drop-shadow-md p-3 mt-2" onError={(e) => { e.currentTarget.style.display='none'; }} />
+                  <img src="/logo-mark.svg" alt="FindTrack Logo" className="w-20 h-20 object-contain mx-auto mb-6 mt-2" onError={(e) => { e.currentTarget.style.display='none'; }} />
                   <h1 className="font-sans text-4xl md:text-[48px] md:leading-[56px] font-bold text-primary-dim mb-4">
                     Find what's lost.<br/>Restore community trust.
                   </h1>
@@ -1657,7 +1657,7 @@ export default function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-8 px-4 md:px-8 max-w-7xl mx-auto">
               <div>
                 <div className="font-sans text-2xl font-bold text-on-surface mb-4 flex items-center gap-2">
-                  <img src="/logo.png" alt="FindTrack Logo" className="w-10 h-10 object-contain p-1 mx-1" onError={(e) => { e.currentTarget.style.display='none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
+                  <img src="/logo-mark.svg" alt="FindTrack Logo" className="w-10 h-10 object-contain p-1 mx-1" onError={(e) => { e.currentTarget.style.display='none'; e.currentTarget.nextElementSibling?.classList.remove('hidden'); }} />
                   <MapPin className="h-6 w-6 text-primary hidden"/>
                   FindTrack
                 </div>
@@ -1924,7 +1924,7 @@ export default function App() {
           {/* Header */}
           <header className="w-full bg-surface shadow-sm border-b border-outline-variant/20 py-4 px-6 flex justify-between items-center shrink-0">
             <div className="flex items-center gap-2">
-              <Leaf className="h-5 w-5 text-primary" aria-hidden="true" />
+              <img src="/logo-mark.svg" alt="" className="h-7 w-7" aria-hidden="true" />
               <span className="font-headline-md text-lg font-bold text-primary tracking-tight">FindTrack</span>
             </div>
             <button 
@@ -2149,7 +2149,7 @@ export default function App() {
             {/* Brand Footer */}
             <div className="mt-6 text-center opacity-75">
               <p className="font-sans font-extrabold text-primary tracking-wider text-sm flex items-center justify-center gap-1.5">
-                <Leaf className="h-4 w-4" aria-hidden="true" /> FindTrack
+                <img src="/logo-mark.svg" alt="" className="h-5 w-5" aria-hidden="true" /> FindTrack
               </p>
             </div>
           </div>
@@ -2180,7 +2180,7 @@ export default function App() {
             <div className="pt-8 pb-8 px-8 shrink-0">
               <div className="flex justify-between items-start">
                 <div className="flex flex-col gap-4">
-                  <img src="/logo.png" alt="FindTrack Logo" className="w-20 h-20 object-contain bg-surface-container-lowest rounded-xl p-3 shadow-sm my-2" onError={(e) => { e.currentTarget.style.display='none'; }} />
+                  <img src="/logo-mark.svg" alt="FindTrack Logo" className="w-16 h-16 object-contain my-2" onError={(e) => { e.currentTarget.style.display='none'; }} />
                   <div className="mt-1">
                     <h1 className="text-3xl font-bold tracking-tight text-white font-poppins leading-none">
                       FindTrack
@@ -2309,7 +2309,7 @@ export default function App() {
                   <Menu className="h-5 w-5" />
                 </button>
                 <div className="md:hidden flex items-center gap-2">
-                  <img src="/logo.png" alt="FindTrack Logo" className="w-10 h-10 object-contain p-1 mx-1" onError={(e) => { e.currentTarget.style.display='none'; }} />
+                  <img src="/logo-mark.svg" alt="FindTrack Logo" className="w-10 h-10 object-contain p-1 mx-1" onError={(e) => { e.currentTarget.style.display='none'; }} />
                   <span className="font-bold text-primary tracking-tight text-lg">FindTrack</span>
                 </div>
                 <div className="relative hidden sm:block" onClick={() => setActiveTab('search')}>
