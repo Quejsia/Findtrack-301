@@ -145,7 +145,7 @@ app.post('/api/verify-claim', apiLimiter, requireAuth, async (req, res) => {
     const itemDoc = await adminDb.collection('items').doc(itemId).get();
     if (!itemDoc.exists) return void res.status(404).json({ error: 'Item not found.' });
     const itemData = itemDoc.data();
-    if (itemData?.type !== 'found' || itemData?.status !== 'active') return void res.status(400).json({ error: 'This item is not available for claim verification.' });
+    if ((itemData?.type !== 'found' && itemData?.type !== 'lost') || itemData?.status !== 'active') return void res.status(400).json({ error: 'This item is not available for claim verification.' });
     if (itemData?.userId === userUid) return void res.status(403).json({ error: 'Item owners cannot verify a claim against their own item.' });
     if (manual === true) {
       const existingClaim = await adminDb.collection('claims').where('itemId', '==', itemId).where('claimerId', '==', userUid).where('status', '==', 'pending').limit(1).get();

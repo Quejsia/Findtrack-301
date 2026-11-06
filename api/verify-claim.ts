@@ -129,7 +129,7 @@ export default async function handler(req: any, res: any) {
       return res.status(404).json({ error: 'Item not found.' });
     }
     const item = itemDoc.data();
-    if (item?.type !== 'found' || item?.status !== 'active') {
+    if ((item?.type !== 'found' && item?.type !== 'lost') || item?.status !== 'active') {
       return res.status(400).json({ error: 'This item is not available for claim verification.' });
     }
     if (item?.userId === user.uid) {
